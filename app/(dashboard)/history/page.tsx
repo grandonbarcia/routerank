@@ -1,27 +1,35 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  MoreVertical,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 
 interface Scan {
   id: string;
   url: string;
-  status: string;
-  grade?: string;
-  scores?: {
-    overall: number;
-  };
-  createdAt: string;
+  domain: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  seo_score: number | null;
+  performance_score: number | null;
+  nextjs_score: number | null;
+  overall_score: number | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export default function HistoryPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { error: showError } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
 
   useEffect(() => {
     const fetchScans = async () => {
@@ -31,12 +39,12 @@ export default function HistoryPage() {
           throw new Error('Failed to fetch scans');
         }
         const data = await response.json();
-        setScans(data.scans);
+        setScans(data.scans || []);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Failed to load history';
         setError(message);
-        showError('Error', message);
+        showError(message);
       } finally {
         setLoading(false);
       }
@@ -45,12 +53,76 @@ export default function HistoryPage() {
     fetchScans();
   }, [showError]);
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+      case 'running':
+      case 'pending':
+        return <Clock className="h-5 w-5 animate-spin text-yellow-600" />;
+      case 'failed':
+        return <AlertCircle className="h-5 w-5 text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'running':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getScoreColor = (score: number | null) => {
+    if (score === null) return 'text-gray-400';
+    if (score >= 90) return 'text-green-600 font-bold';
+    if (score >= 80) return 'text-blue-600 font-bold';
+    if (score >= 70) return 'text-yellow-600 font-bold';
+    if (score >= 60) return 'text-orange-600 font-bold';
+    return 'text-red-600 font-bold';
+  };
+
+  const handleRescan = async (id: string) => {
+    const scan = scans.find((s) => s.id === id);
+    if (scan) {
+      try {
+        const response = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: scan.url, fullAudit: true }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          showError(data.error || 'Failed to start scan');
+          return;
+        }
+
+        showSuccess('New scan started!');
+        setTimeout(() => window.location.reload(), 1000);
+      } catch (err) {
+        showError(err instanceof Error ? err.message : 'Failed to start scan');
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading history...</p>
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
+        <div className="flex items-center justify-center rounded-lg border border-gray-200 py-12">
+          <div className="text-center">
+            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-gray-600" />
+            <p className="mt-4 text-gray-600">Loading history...</p>
+          </div>
         </div>
       </div>
     );
@@ -58,113 +130,168 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
+          <p className="mt-1 text-gray-600">{scans.length} audits completed</p>
+        </div>
         <Link
           href="/dashboard/scan"
-          className="rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
         >
+          <RefreshCw className="h-4 w-4" />
           New Audit
         </Link>
       </div>
 
+      {/* Error State */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+          <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
           <p className="text-red-700">{error}</p>
         </div>
       )}
 
-      {scans.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-          <p className="text-gray-600">
-            No scans yet. Start by running your first audit.
+      {/* Empty State */}
+      {scans.length === 0 && !error && (
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
+          <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <Clock className="h-6 w-6 text-gray-400" />
+          </div>
+          <p className="text-lg font-semibold text-gray-900">No scans yet</p>
+          <p className="mt-1 text-gray-600">
+            Start by running your first website audit
           </p>
           <Link
             href="/dashboard/scan"
-            className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
           >
-            Start Audit
+            <RefreshCw className="h-4 w-4" />
+            Start Your First Audit
           </Link>
         </div>
-      ) : (
-        <div className="rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="border-b border-gray-200 bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Website
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Score
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Grade
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {scans.map((scan) => (
-                <tr key={scan.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="text-sm">
-                      <p className="font-medium text-gray-900">{scan.url}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-gray-900">
-                      {scan.scores ? Math.round(scan.scores.overall) : '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-gray-900">
-                      {scan.grade || '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                        scan.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : scan.status === 'in_progress'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {scan.status === 'in_progress' && (
-                        <span className="mr-2 inline-block h-2 w-2 rounded-full bg-yellow-600 animate-pulse"></span>
-                      )}
-                      {scan.status.charAt(0).toUpperCase() +
-                        scan.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(scan.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {scan.status === 'completed' ? (
-                      <Link
-                        href={`/dashboard/scan/${scan.id}`}
-                        className="text-blue-600 hover:underline text-sm font-medium"
-                      >
-                        View Results
-                      </Link>
-                    ) : (
-                      <span className="text-gray-400 text-sm">Pending...</span>
-                    )}
-                  </td>
+      )}
+
+      {/* Scans Table */}
+      {scans.length > 0 && (
+        <div className="overflow-hidden rounded-lg border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Website
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Overall Score
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    SEO
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Performance
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Next.js
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Date
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                    Action
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {scans.map((scan) => (
+                  <tr key={scan.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-gray-900 truncate">
+                          {scan.url}
+                        </p>
+                        <p className="text-xs text-gray-500">{scan.domain}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {scan.overall_score !== null ? (
+                        <span
+                          className={`text-lg ${getScoreColor(
+                            scan.overall_score
+                          )}`}
+                        >
+                          {Math.round(scan.overall_score)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {scan.seo_score !== null ? (
+                        <span className={getScoreColor(scan.seo_score)}>
+                          {Math.round(scan.seo_score)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {scan.performance_score !== null ? (
+                        <span className={getScoreColor(scan.performance_score)}>
+                          {Math.round(scan.performance_score)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {scan.nextjs_score !== null ? (
+                        <span className={getScoreColor(scan.nextjs_score)}>
+                          {Math.round(scan.nextjs_score)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(scan.status)}
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
+                            scan.status
+                          )}`}
+                        >
+                          {scan.status.charAt(0).toUpperCase() +
+                            scan.status.slice(1)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(scan.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {scan.status === 'completed' ? (
+                        <Link
+                          href={`/dashboard/scan/${scan.id}`}
+                          className="inline-flex items-center gap-1 rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          Processing...
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -1,21 +1,18 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ScanPage() {
   const [url, setUrl] = useState('');
+  const [fullAudit, setFullAudit] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanId, setScanId] = useState<string | null>(null);
   const router = useRouter();
-  const {
-    error: showError,
-    success: showSuccess,
-    loading: showLoading,
-  } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,110 +20,157 @@ export default function ScanPage() {
     setError(null);
 
     try {
-      showLoading('Starting audit... This may take a few moments');
-
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, fullAudit: true }),
+        body: JSON.stringify({ url, fullAudit }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         const errorMessage = data.error || 'Failed to start audit';
         setError(errorMessage);
-        showError('Error', errorMessage);
+        showError(errorMessage);
         setLoading(false);
         return;
       }
 
-      const data = await response.json();
-      showSuccess('Audit Started', 'Check your dashboard or email for results');
+      setScanId(data.scanId);
+      showSuccess(`Scan started! ID: ${data.scanId}`);
 
-      // Redirect to history page or specific scan page
+      // Redirect to the scan results page
       setTimeout(() => {
-        router.push('/dashboard/history');
-      }, 2000);
+        router.push(`/dashboard/scan/${data.scanId}`);
+      }, 1000);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to start audit';
       setError(message);
-      showError('Error', message);
+      showError(message);
       setLoading(false);
     }
   };
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">New Site Audit</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Audit Your Website</h1>
+        <p className="mt-2 text-gray-600">
+          Get comprehensive SEO, performance, and Next.js insights
+        </p>
+      </div>
 
-      <div className="mx-auto max-w-2xl">
-        <div className="rounded-lg border border-gray-200 bg-white p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="url"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Website URL
-              </label>
-              <input
-                type="url"
-                id="url"
-                name="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                required
-                placeholder="https://example.com"
-                disabled={loading}
-                className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-              />
-              <p className="mt-2 text-sm text-gray-500">
-                Enter the full URL of the website you want to audit. We&apos;ll
-                check SEO, performance, and Next.js best practices.
-              </p>
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-3">
-                <p className="text-sm text-red-700">{error}</p>
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Main Form */}
+        <div className="lg:col-span-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label
+                  htmlFor="url"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Website URL
+                </label>
+                <input
+                  type="text"
+                  id="url"
+                  name="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  required
+                  placeholder="example.com or https://example.com"
+                  disabled={loading}
+                  className="mt-2 block w-full rounded-md border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                />
+                <p className="mt-2 text-sm text-gray-500">
+                  Enter the full URL (https:// is optional). We&apos;ll audit
+                  SEO, performance, and Next.js best practices.
+                </p>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading || !url}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              {loading ? 'Starting Audit...' : 'Start Audit'}
-            </button>
-          </form>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="fullAudit"
+                  checked={fullAudit}
+                  onChange={(e) => setFullAudit(e.target.checked)}
+                  disabled={loading}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="fullAudit" className="text-sm text-gray-700">
+                  Full audit (includes performance metrics - takes ~2-3 minutes)
+                </label>
+              </div>
 
-          <div className="mt-8 border-t border-gray-200 pt-8">
-            <h3 className="text-sm font-semibold text-gray-900">
-              What we audit:
-            </h3>
-            <ul className="mt-4 space-y-2 text-sm text-gray-600">
-              <li>✓ SEO metadata and structure</li>
-              <li>✓ Core Web Vitals and performance metrics</li>
-              <li>✓ Next.js App Router best practices</li>
-              <li>✓ Image optimization</li>
-              <li>✓ Font and script loading strategies</li>
+              {error && (
+                <div className="flex gap-3 rounded-md bg-red-50 p-4">
+                  <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !url.trim()}
+                className="w-full rounded-md bg-blue-600 px-4 py-3 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {loading ? 'Starting Audit...' : 'Start Audit'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Info Sidebar */}
+        <div className="space-y-6">
+          {/* What We Audit */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <h3 className="font-semibold text-gray-900">What We Audit</h3>
+            <ul className="mt-4 space-y-3 text-sm text-gray-600">
+              <li className="flex gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <span>SEO metadata &amp; structure</span>
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <span>Core Web Vitals</span>
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <span>Next.js best practices</span>
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <span>Image optimization</span>
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+                <span>Font &amp; script loading</span>
+              </li>
             </ul>
           </div>
 
-          <div className="mt-8 border-t border-gray-200 pt-8">
-            <h3 className="text-sm font-semibold text-gray-900">
-              How it works:
-            </h3>
-            <ol className="mt-4 space-y-2 text-sm text-gray-600">
-              <li>1. Enter your website URL above</li>
-              <li>2. We&apos;ll fetch your page and analyze it</li>
+          {/* How It Works */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <h3 className="font-semibold text-gray-900">How It Works</h3>
+            <ol className="mt-4 space-y-3 text-sm text-gray-600">
               <li>
-                3. Results show within 2-3 minutes (performance check takes
-                time)
+                <span className="font-semibold text-gray-900">1.</span> Enter
+                your URL
               </li>
-              <li>4. Get detailed recommendations for improvement</li>
+              <li>
+                <span className="font-semibold text-gray-900">2.</span> We
+                analyze the page
+              </li>
+              <li>
+                <span className="font-semibold text-gray-900">3.</span> Get
+                detailed results
+              </li>
+              <li>
+                <span className="font-semibold text-gray-900">4.</span> View
+                recommendations
+              </li>
             </ol>
           </div>
         </div>

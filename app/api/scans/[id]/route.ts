@@ -16,48 +16,75 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch the scan
-    const { data: scan, error } = await supabase
+    // Fetch the scan with all details
+    const { data: scan, error: scanError } = await supabase
       .from('scans')
       .select(
         `
         id,
         url,
+        domain,
         status,
-        scores,
-        grade,
+        seo_score,
+        performance_score,
+        nextjs_score,
+        overall_score,
+        lighthouse_data,
+        error_message,
         created_at,
-        updated_at,
-        audit_issues (
-          id,
-          category,
-          severity,
-          issue,
-          recommendation
-        )
+        completed_at
       `
       )
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
-    if (error || !scan) {
+    if (scanError || !scan) {
       return NextResponse.json({ error: 'Scan not found' }, { status: 404 });
     }
 
-    // Transform the response
+    // Fetch issues for this scan
+    const { data: issues, error: issuesError } = await supabase
+      .from('audit_issues')
+      .select(
+        `
+        id,
+        category,
+        severity,
+        rule_id,
+        title,
+        message,
+        fix_suggestion,
+        fix_code,
+        metadata
+      `
+      )
+      .eq('scan_id', id)
+      .order('severity', { ascending: false });
+
+    if (issuesError) {
+      throw issuesError;
+    }
+
     return NextResponse.json({
-      id: scan.id,
-      url: scan.url,
-      status: scan.status,
-      scores: scan.scores,
-      grade: scan.grade,
-      issues: scan.audit_issues || [],
-      createdAt: scan.created_at,
-      updatedAt: scan.updated_at,
+      scan: {
+        id: scan.id,
+        url: scan.url,
+        domain: scan.domain,
+        status: scan.status,
+        seoScore: scan.seo_score,
+        performanceScore: scan.performance_score,
+        nextjsScore: scan.nextjs_score,
+        overallScore: scan.overall_score,
+        lighthouseData: scan.lighthouse_data,
+        errorMessage: scan.error_message,
+        createdAt: scan.created_at,
+        completedAt: scan.completed_at,
+      },
+      issues: issues || [],
     });
   } catch (error) {
-    console.error('Error fetching scan:', error);
+    console.error('[API] Error fetching scan:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

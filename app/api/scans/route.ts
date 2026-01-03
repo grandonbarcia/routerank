@@ -15,7 +15,20 @@ export async function GET() {
     // Fetch all scans for the user, ordered by creation date
     const { data: scans, error } = await supabase
       .from('scans')
-      .select('id, url, status, grade, scores, created_at')
+      .select(
+        `
+        id,
+        url,
+        domain,
+        status,
+        seo_score,
+        performance_score,
+        nextjs_score,
+        overall_score,
+        created_at,
+        completed_at
+      `
+      )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -23,19 +36,12 @@ export async function GET() {
       throw error;
     }
 
-    // Transform the response
-    const transformedScans = scans.map((scan) => ({
-      id: scan.id,
-      url: scan.url,
-      status: scan.status,
-      grade: scan.grade,
-      scores: scan.scores,
-      createdAt: scan.created_at,
-    }));
-
-    return NextResponse.json({ scans: transformedScans });
+    return NextResponse.json({
+      scans: scans || [],
+      total: scans?.length || 0,
+    });
   } catch (error) {
-    console.error('Error fetching scans:', error);
+    console.error('[API] Error fetching scans:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
