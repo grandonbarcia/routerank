@@ -29,9 +29,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="rounded-lg bg-white p-8 shadow-md">
-      <h1 className="text-2xl font-bold text-gray-900">Sign In to RouteRank</h1>
-      <p className="mt-2 text-gray-600">
+    <div className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 shadow-md">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        Sign In to RouteRank
+      </h1>
+      <p className="mt-2 text-gray-600 dark:text-gray-400">
         Access your dashboard and scan history
       </p>
 
@@ -39,7 +41,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-200"
           >
             Email Address
           </label>
@@ -48,7 +50,7 @@ export default function LoginPage() {
             id="email"
             name="email"
             required
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="you@example.com"
           />
         </div>
@@ -56,7 +58,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-200"
           >
             Password
           </label>
@@ -65,14 +67,14 @@ export default function LoginPage() {
             id="password"
             name="password"
             required
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="••••••••"
           />
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-3">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="rounded-md bg-red-50 dark:bg-red-950/30 p-3">
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
         )}
 
@@ -86,14 +88,16 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 flex items-center">
-        <div className="flex-1 border-t border-gray-300" />
-        <span className="px-2 text-sm text-gray-500">Or</span>
-        <div className="flex-1 border-t border-gray-300" />
+        <div className="flex-1 border-t border-gray-300 dark:border-gray-700" />
+        <span className="px-2 text-sm text-gray-500 dark:text-gray-400">
+          Or
+        </span>
+        <div className="flex-1 border-t border-gray-300 dark:border-gray-700" />
       </div>
 
       <button
         type="button"
-        className="mt-4 w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        className="mt-4 w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -105,7 +109,7 @@ export default function LoginPage() {
         Sign in with GitHub
       </button>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         Don&apos;t have an account?{' '}
         <Link
           href="/signup"

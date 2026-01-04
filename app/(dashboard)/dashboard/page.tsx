@@ -64,21 +64,23 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Welcome back, {profile?.full_name || user?.email}!
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           Track your website's SEO, performance, and Next.js optimization
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Audits</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Audits
+              </p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
                 {completedScans.length}
               </p>
             </div>
@@ -86,10 +88,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Average Score
+              </p>
               <p
                 className={`mt-2 text-3xl font-bold ${
                   averageScore >= 80
@@ -106,11 +110,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Plan</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 capitalize">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Plan
+              </p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white capitalize">
                 {profile?.subscription_tier || 'Free'}
               </p>
               {profile?.subscription_tier === 'free' && (
@@ -128,8 +134,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Quick Actions
+        </h2>
         <div className="mt-4 flex gap-3">
           <Link
             href="/dashboard/scan"
@@ -140,7 +148,7 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/dashboard/history"
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-semibold hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <BarChart3 className="h-4 w-4" />
             View History
@@ -149,9 +157,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Scans */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Audits</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Recent Audits
+          </h2>
           <Link
             href="/dashboard/history"
             className="text-sm text-blue-600 hover:underline"
@@ -165,7 +175,7 @@ export default function DashboardPage() {
             <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : recentScans.length === 0 ? (
-          <p className="text-center text-gray-600 py-8">
+          <p className="text-center text-gray-600 dark:text-gray-400 py-8">
             No audits yet. Start your first scan to see results here.
           </p>
         ) : (
@@ -174,11 +184,13 @@ export default function DashboardPage() {
               <Link
                 key={scan.id}
                 href={`/dashboard/scan/${scan.id}`}
-                className="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition"
+                className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{scan.url}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {scan.url}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {new Date(scan.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -191,7 +203,7 @@ export default function DashboardPage() {
                     {Math.round(scan.overall_score)}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+                  <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-200">
                     {scan.status}
                   </span>
                 )}
@@ -203,9 +215,11 @@ export default function DashboardPage() {
 
       {/* Upgrade Prompt */}
       {profile?.subscription_tier === 'free' && completedScans.length >= 1 && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="font-semibold text-blue-900">Ready to audit more?</h3>
-          <p className="mt-2 text-sm text-blue-800">
+        <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-6">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200">
+            Ready to audit more?
+          </h3>
+          <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
             Upgrade to Pro for unlimited audits, detailed code suggestions, and
             PDF exports.
           </p>
