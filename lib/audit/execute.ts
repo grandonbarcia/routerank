@@ -5,6 +5,7 @@ import { analyzeSeo } from './seo';
 import { analyzeNextjs } from './nextjs';
 import { analyzePerformance } from './performance';
 import { createAuditReport } from './scoring';
+import type { AuditIssue, AuditResult } from './scoring';
 
 export interface ExecuteAuditParams {
   url: string;
@@ -17,8 +18,19 @@ export interface ExecuteAuditResult {
   error?: string;
   scanId?: string;
   url?: string;
-  report?: any;
+  report?: AuditReport;
 }
+
+export type AuditReport = AuditResult & {
+  metadata: {
+    seo: unknown;
+    performance?: unknown;
+    nextjs: unknown;
+  };
+  checkedAt: string;
+  userId: string;
+  isQuickAudit?: boolean;
+};
 
 /**
  * Main audit execution function
@@ -64,7 +76,11 @@ export async function executeAudit(
     console.log(
       `[Audit] Running performance analysis (this may take 1-2 minutes)`
     );
-    let performanceResult;
+    let performanceResult: {
+      score: number;
+      issues: AuditIssue[];
+      metrics: unknown;
+    };
     try {
       performanceResult = await analyzePerformance(normalizedUrl);
       console.log(`[Audit] Performance score: ${performanceResult.score}/100`);
@@ -87,7 +103,7 @@ export async function executeAudit(
     }
 
     // Step 5: Combine all issues
-    const allIssues = [
+    const allIssues: AuditIssue[] = [
       ...seoResult.issues,
       ...nextjsResult.issues,
       ...performanceResult.issues,
@@ -158,7 +174,11 @@ export async function executeQuickAudit(
     const nextjsResult = analyzeNextjs(html);
 
     // Use placeholder performance result
-    const performanceResult = {
+    const performanceResult: {
+      score: number;
+      issues: AuditIssue[];
+      metrics: unknown;
+    } = {
       score: 75, // Placeholder
       issues: [
         {
@@ -172,7 +192,7 @@ export async function executeQuickAudit(
       metrics: {},
     };
 
-    const allIssues = [
+    const allIssues: AuditIssue[] = [
       ...seoResult.issues,
       ...nextjsResult.issues,
       ...performanceResult.issues,

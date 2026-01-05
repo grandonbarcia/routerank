@@ -1,8 +1,8 @@
 # RouteRank Implementation Progress
 
 **Date Started:** January 2, 2026  
-**Last Updated:** January 2, 2026  
-**Status:** Phase 4 Complete - Audit Engine & Scan UI Fully Implemented ✅
+**Last Updated:** January 5, 2026  
+**Status:** Phase 4 Complete ✅ + Phase 6 PDF export complete ✅ (Share still stub) 🔄
 
 ---
 
@@ -51,13 +51,17 @@
   - `components/layout/header.tsx` - Navigation header with auth state
   - `components/layout/footer.tsx` - Footer with links
   - `app/layout.tsx` - Root layout with Providers
-  - `app/(marketing)/layout.tsx` - Marketing layout with header + footer
+  - `app/marketing/layout.tsx` - Marketing layout with footer
   - `app/(auth)/layout.tsx` - Auth layout (centered card)
   - `app/(dashboard)/layout.tsx` - Dashboard layout with sidebar navigation
 
 ### Phase 2: Landing Page & Marketing ✅
 
-- [x] **Landing Page** (`app/(marketing)/page.tsx`)
+- [x] **Landing Page** (`app/page.tsx`)
+
+  - Full marketing landing page with charts/testimonials/FAQ sections
+
+- [x] **Marketing Page** (`app/marketing/page.tsx`)
 
   - Hero section with value proposition
   - Features section (SEO, Performance, Next.js)
@@ -201,44 +205,34 @@
 
 1. **Stripe Integration**
 
-   - [ ] Create Stripe products and prices in dashboard
-   - [ ] Implement checkout session creation
-   - [ ] Setup webhook handler for payment events
-   - [ ] Update user subscription tier on successful payment
+- [ ] Create Stripe products and prices in Stripe dashboard
+- [x] Checkout session API (`POST /api/checkout`)
+- [ ] Pricing page redirect to Stripe-hosted checkout (currently redirects to a non-existent `/checkout` page)
+- [x] Stripe webhook handler (`POST /api/webhook/stripe`)
+- [x] Update user subscription tier on successful payment (webhook updates `profiles.subscription_tier`)
 
 2. **Subscription Management**
-   - [ ] Stripe customer portal integration
-   - [ ] Feature gating based on subscription tier
-   - [ ] Upgrade/downgrade flows
+
+- [ ] Stripe customer portal integration
+- [x] Feature gating / scan limits by tier (`POST /api/scan` enforces daily limit for Free)
+- [ ] Upgrade/downgrade flows (portal or plan switch UI)
 
 ### Phase 6: PDF Export & Advanced Features (Priority: MEDIUM)
 
 1. **Report Generation**
 
-   - [ ] PDF export using @react-pdf/renderer
-   - [ ] Custom branded templates
-   - [ ] White-label option for Agency tier
+- [x] Export endpoint (`GET /api/scans/[id]/export` supports JSON + `?format=pdf`)
+- [x] Export UI (`components/scan/pdf-export.tsx` downloads PDF)
+- [x] True PDF generation (`@react-pdf/renderer` server-side)
+- [x] Custom branded template (`lib/reports/audit-pdf.tsx`)
+- [x] White-label option for Agency tier (`whiteLabel` query param + tier gating)
 
 2. **Scheduled Audits** (Future)
    - [ ] Weekly/monthly recurring scans
    - [ ] Email reports
    - [ ] Regression alerts
 
-### Phase 7: Deployment & Monitoring (Priority: HIGH)
-
-1. **Stripe Setup**
-
-   - [ ] Create Stripe products and prices
-   - [ ] Implement checkout session creation
-   - [ ] Setup webhook handler
-   - [ ] Update user plan on successful payment
-
-2. **Feature Gating**
-   - [ ] Implement plan checking
-   - [ ] Limit scans based on tier
-   - [ ] Show upgrade prompts
-
-### Phase 7: Polish & Deployment
+### Phase 7: Polish, Deployment & Monitoring (Priority: HIGH)
 
 1. **Testing**
 
@@ -247,25 +241,27 @@
    - [ ] E2E tests for critical flows
 
 2. **Deployment**
-   - [ ] Deploy to Vercel
-   - [ ] Configure production environment
-   - [ ] Setup monitoring (Sentry, analytics)
+
+- [x] Deployment documentation drafted (see `PHASE_3_QUICKSTART.md`, `PHASE_4_QUICKSTART.md`, `PHASE_3_AUTH_SETUP.md`)
+- [ ] Deploy to Vercel
+- [ ] Configure production environment
+- [ ] Setup monitoring (Sentry, analytics)
 
 ---
 
 ## 📊 Progress Summary
 
-| Phase             | Status      | Completion |
-| ----------------- | ----------- | ---------- |
-| 1. Foundation     | ✅ Complete | 100%       |
-| 2. Marketing      | ✅ Complete | 100%       |
-| 3. Authentication | ✅ Complete | 100%       |
-| 4. Audit Engine   | ✅ Complete | 100%       |
-| 5. Monetization   | ⏳ Next     | 0%         |
-| 6. Export/Report  | 📅 Queued   | 0%         |
-| 7. Deploy         | 📅 Queued   | 0%         |
+| Phase             | Status       | Completion |
+| ----------------- | ------------ | ---------- |
+| 1. Foundation     | ✅ Complete  | 100%       |
+| 2. Marketing      | ✅ Complete  | 100%       |
+| 3. Authentication | ✅ Complete  | 100%       |
+| 4. Audit Engine   | ✅ Complete  | 100%       |
+| 5. Monetization   | 🔄 In Dev    | 60%        |
+| 6. Export/Report  | ✅ Core Done | 80%        |
+| 7. Deploy         | 📅 Queued    | 20%        |
 
-**Overall MVP Progress: ~57%** (4 out of 7 phases complete)
+**Overall MVP Progress: ~78%** (core product + PDF export complete; Stripe/share still in progress)
 
 ---
 
@@ -275,11 +271,13 @@
 
 ```
 ✅ app/
-  ✅ (marketing)/ - Public pages
+  ✅ (marketing)/ - Route groups (e.g. pricing)
   ✅ (auth)/ - Login/signup pages
   ✅ (dashboard)/ - Protected app pages
-  ✅ api/ - API routes (ready for implementation)
+  ✅ marketing/ - Marketing section
+  ✅ api/ - API routes (scan, scans, checkout, stripe webhook)
   ✅ layout.tsx
+  ✅ page.tsx
 ✅ components/
   ✅ layout/ - Header, footer components
   ✅ ui/ - shadcn components
@@ -328,7 +326,7 @@ npm run lint
 
 ## 📝 Notes for Next Development Session
 
-1. **Supabase Setup**: Before implementing auth, you'll need:
+1. **Supabase Setup**: To run locally you'll still need:
 
    - A Supabase account (https://supabase.com)
    - Create a new project
@@ -337,15 +335,16 @@ npm run lint
 
 2. **Local Development**: The app currently has:
 
-   - Static auth pages (not yet functional)
-   - Full UI structure and navigation
-   - Responsive design
-   - All routes wired up
+- Working Supabase auth flow (email/password + GitHub OAuth routes)
+- Full audit pipeline (scan → execute → results)
+- Stripe API routes (checkout + webhook) wired up (needs Stripe dashboard setup)
+- Export endpoint supports JSON + PDF downloads; share endpoint is still a stub
 
 3. **Ready to Implement**:
-   - Auth: All UI is ready, just needs Supabase connection
-   - API Routes: `/api/scan` folder ready for implementation
-   - Audit Engine: `lib/audit/` ready for audit logic
+
+- Stripe: finish pricing → Stripe checkout redirect; add customer portal
+- Share: add a public scan viewer page or adjust the share endpoint
+- PDF: expand template polish/branding as needed
 
 ---
 

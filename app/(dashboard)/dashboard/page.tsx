@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Activity, RefreshCw, BarChart3 } from 'lucide-react';
+import { TrendingUp, Activity, RefreshCw, BarChart3, User } from 'lucide-react';
 
 interface Scan {
   id: string;
@@ -62,13 +62,90 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
+      {/* User Profile Section */}
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-8">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+              {(profile?.full_name || user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Welcome back, {profile?.full_name || user?.email}!
+              </h1>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                Track your website&apos;s SEO, performance, and Next.js
+                optimization
+              </p>
+              <div className="mt-3 flex items-center gap-4 text-sm">
+                <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                  Active account
+                </span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {new Date(user?.created_at || new Date()).toLocaleDateString(
+                    'en-US',
+                    { month: 'long', day: 'numeric', year: 'numeric' }
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <User className="h-4 w-4" />
+            Edit Profile
+          </Link>
+        </div>
+
+        {/* Subscription Info */}
+        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              Current Plan
+            </p>
+            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white capitalize">
+              {profile?.subscription_tier || 'Free'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              Email
+            </p>
+            <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white truncate">
+              {user?.email}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              Auth Method
+            </p>
+            <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+              {user?.app_metadata?.provider === 'github'
+                ? 'GitHub OAuth'
+                : 'Email & Password'}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              Account Status
+            </p>
+            <p className="mt-1 text-sm font-medium text-green-600 dark:text-green-400">
+              Verified
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Welcome Section (kept for compatibility) */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Welcome back, {profile?.full_name || user?.email}!
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Track your website's SEO, performance, and Next.js optimization
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          Dashboard Overview
+        </h2>
+        <p className="mt-1 text-gray-600 dark:text-gray-400">
+          Manage your audits and track performance metrics
         </p>
       </div>
 
@@ -140,14 +217,14 @@ export default function DashboardPage() {
         </h2>
         <div className="mt-4 flex gap-3">
           <Link
-            href="/dashboard/scan"
+            href="/scan"
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
           >
             <RefreshCw className="h-4 w-4" />
             New Audit
           </Link>
           <Link
-            href="/dashboard/history"
+            href="/history"
             className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <BarChart3 className="h-4 w-4" />
@@ -163,7 +240,7 @@ export default function DashboardPage() {
             Recent Audits
           </h2>
           <Link
-            href="/dashboard/history"
+            href="/history"
             className="text-sm text-blue-600 hover:underline"
           >
             View All
@@ -183,7 +260,7 @@ export default function DashboardPage() {
             {recentScans.map((scan) => (
               <Link
                 key={scan.id}
-                href={`/dashboard/scan/${scan.id}`}
+                href={`/scan/${scan.id}`}
                 className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
               >
                 <div className="flex-1">

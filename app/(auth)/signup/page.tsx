@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { signUp } from '@/lib/auth/actions';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOAuthLoading] = useState(false);
   const { error: showError, success: showSuccess } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +43,29 @@ export default function SignupPage() {
       setSuccess(true);
     }
     setLoading(false);
+  };
+
+  const handleGitHubSignUp = async () => {
+    setOAuthLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        showError('OAuth Error', error.message);
+        setOAuthLoading(false);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'GitHub sign up failed';
+      showError('Error', message);
+      setOAuthLoading(false);
+    }
   };
 
   if (success) {
@@ -179,7 +206,9 @@ export default function SignupPage() {
 
       <button
         type="button"
-        className="mt-4 w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+        onClick={handleGitHubSignUp}
+        disabled={oauthLoading}
+        className="mt-4 w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition"
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -188,7 +217,7 @@ export default function SignupPage() {
             clipRule="evenodd"
           />
         </svg>
-        Sign up with GitHub
+        {oauthLoading ? 'Connecting...' : 'Sign up with GitHub'}
       </button>
 
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">

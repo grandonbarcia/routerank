@@ -137,7 +137,7 @@ export default function HistoryPage() {
           <p className="mt-1 text-gray-600">{scans.length} audits completed</p>
         </div>
         <Link
-          href="/dashboard/scan"
+          href="/scan"
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
         >
           <RefreshCw className="h-4 w-4" />
@@ -164,7 +164,7 @@ export default function HistoryPage() {
             Start by running your first website audit
           </p>
           <Link
-            href="/dashboard/scan"
+            href="/scan"
             className="mt-6 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
           >
             <RefreshCw className="h-4 w-4" />
@@ -276,7 +276,7 @@ export default function HistoryPage() {
                     <td className="px-6 py-4 text-right">
                       {scan.status === 'completed' ? (
                         <Link
-                          href={`/dashboard/scan/${scan.id}`}
+                          href={`/scan/${scan.id}`}
                           className="inline-flex items-center gap-1 rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50"
                         >
                           View

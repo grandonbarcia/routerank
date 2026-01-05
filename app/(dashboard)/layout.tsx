@@ -1,6 +1,5 @@
 'use client';
 
-import { Header } from '@/components/layout/header';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -16,7 +15,6 @@ export default function DashboardLayout({
 
   return (
     <>
-      <Header />
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-16 text-gray-900 dark:text-gray-50">
         <div className="mx-auto max-w-7xl">
           <div className="flex">

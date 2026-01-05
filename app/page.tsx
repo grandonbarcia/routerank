@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useTheme } from './providers';
 import {
   CheckCircle2,
   Zap,
@@ -9,29 +10,17 @@ import {
   Code2,
   Sparkles,
   ArrowRight,
-  TrendingUp,
-  Menu,
-  X,
   Star,
   Rocket,
-  BarChart3,
-  Shield,
-  Layers,
-  Lightbulb,
   ChevronLeft,
   ChevronRight,
-  Mail,
   Github,
   Linkedin,
   Twitter,
-  Moon,
-  Sun,
 } from 'lucide-react';
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -91,10 +80,9 @@ const testimonials = [
 ];
 
 export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isSticky, setIsSticky] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { isDarkMode } = useTheme();
 
   const chartGridStroke = isDarkMode ? '#374151' : '#e5e7eb';
   const chartAxisStroke = isDarkMode ? '#6b7280' : '#9ca3af';
@@ -105,34 +93,12 @@ export default function Home() {
   const chartLegendText = isDarkMode ? '#e5e7eb' : '#374151';
 
   useEffect(() => {
-    // Check localStorage for dark mode preference
-    const isDark = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  useEffect(() => {
     const handleScroll = () => {
       setIsSticky(window.scrollY > 100);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode.toString());
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   const nextTestimonial = () => {
     setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
@@ -145,143 +111,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50">
-      {/* Navigation */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isSticky
-            ? 'bg-white dark:bg-gray-900 shadow-md dark:shadow-gray-800'
-            : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md'
-        }`}
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
-                <Rocket className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                RouteRank
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              <Link
-                href="/pricing"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Pricing
-              </Link>
-              <Link
-                href="/dashboard"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/scan"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Scan
-              </Link>
-              <Link
-                href="/settings"
-                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Settings
-              </Link>
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label={
-                  isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
-                }
-              >
-                {isDarkMode ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </button>
-              <Link
-                href="/signup"
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-              >
-                Get Started
-              </Link>
-            </div>
-
-            {/* Mobile Actions */}
-            <div className="md:hidden flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleDarkMode}
-                className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label={
-                  isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
-                }
-              >
-                {isDarkMode ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </button>
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Toggle menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6 text-gray-900 dark:text-gray-50" />
-                ) : (
-                  <Menu className="h-6 w-6 text-gray-900 dark:text-gray-50" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="md:hidden pb-4 space-y-3 border-t border-gray-200 dark:border-gray-800 pt-4 animate-in fade-in duration-200">
-              <Link
-                href="/pricing"
-                className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Pricing
-              </Link>
-              <Link
-                href="/dashboard"
-                className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/scan"
-                className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Scan
-              </Link>
-              <Link
-                href="/settings"
-                className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-              >
-                Settings
-              </Link>
-              <Link
-                href="/signup"
-                className="block w-full text-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-          )}
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 pt-16">
       {/* Hero Section */}
       <section className="relative overflow-hidden px-4 pt-32 pb-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -303,9 +133,10 @@ export default function Home() {
               </h1>
 
               <p className="text-xl text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                RouteRank isn't a generic SEO tool. We understand App Routers,
-                metadata APIs, image optimization, and the things that matter to
-                Next.js developers. Get actionable insights, not buzzwords.
+                RouteRank isn&apos;t a generic SEO tool. We understand App
+                Routers, metadata APIs, image optimization, and the things that
+                matter to Next.js developers. Get actionable insights, not
+                buzzwords.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -624,7 +455,7 @@ export default function Home() {
               </div>
 
               <p className="text-xl text-gray-900 dark:text-gray-100 mb-8 leading-relaxed">
-                "{testimonials[currentTestimonial].content}"
+                &ldquo;{testimonials[currentTestimonial].content}&rdquo;
               </p>
 
               <div className="flex items-center gap-4">

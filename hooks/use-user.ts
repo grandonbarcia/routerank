@@ -25,32 +25,32 @@ export function useUser(): UseUserReturn {
       try {
         setLoading(true);
 
-        // Get the current user
+        // Fast path: read session from storage (avoids a network round-trip)
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (userError) {
-          setError(userError);
+        if (sessionError) {
+          setError(sessionError);
           setUser(null);
           setProfile(null);
           return;
         }
 
-        if (!user) {
+        if (!session?.user) {
           setUser(null);
           setProfile(null);
           return;
         }
 
-        setUser(user);
+        setUser(session.user);
 
         // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single();
 
         if (profileError) {

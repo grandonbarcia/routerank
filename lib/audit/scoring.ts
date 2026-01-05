@@ -1,4 +1,4 @@
-interface AuditIssue {
+export interface AuditIssue {
   category: 'seo' | 'performance' | 'nextjs';
   severity: 'critical' | 'high' | 'medium' | 'low';
   rule: string;
@@ -6,7 +6,7 @@ interface AuditIssue {
   suggestion: string;
 }
 
-interface AuditScores {
+export interface AuditScores {
   overall: number; // 0-100
   seo: number; // 0-100
   performance: number; // 0-100
@@ -14,7 +14,7 @@ interface AuditScores {
   grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 }
 
-interface AuditResult {
+export interface AuditResult {
   scores: AuditScores;
   issues: AuditIssue[];
   totalIssues: number;

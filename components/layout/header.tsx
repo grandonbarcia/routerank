@@ -2,13 +2,20 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Menu, Moon, Rocket, Sun, X } from 'lucide-react';
+import { Menu, Moon, Rocket, Sun, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/app/providers';
+import { useUser } from '@/hooks/use-user';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
+  const { user, profile, loading } = useUser();
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     const handleScroll = () => setIsSticky(window.scrollY > 100);
@@ -16,6 +23,17 @@ export function Header() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUserMenuOpen(false);
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <nav
@@ -40,7 +58,13 @@ export function Header() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
             <Link
-              href="/pricing"
+              href="/"
+              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              href="/marketing/pricing"
               className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               Pricing
@@ -77,12 +101,77 @@ export function Header() {
                 <Moon className="h-5 w-5" />
               )}
             </button>
-            <Link
-              href="/signup"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-            >
-              Get Started
-            </Link>
+
+            {/* User Menu or Auth Links */}
+            {loading ? null : user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white text-sm font-semibold">
+                    {(profile?.full_name ||
+                      user?.email ||
+                      'U')[0].toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {profile?.full_name
+                      ? profile.full_name.split(' ')[0]
+                      : user?.email?.split('@')[0]}
+                  </span>
+                </button>
+
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 py-2">
+                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {profile?.full_name || user?.email}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {profile?.subscription_tier || 'Free'}
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Actions */}
@@ -101,6 +190,16 @@ export function Header() {
                 <Moon className="h-5 w-5" />
               )}
             </button>
+            {!loading && user && (
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white text-sm font-semibold">
+                  {(profile?.full_name || user?.email || 'U')[0].toUpperCase()}
+                </div>
+              </button>
+            )}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -119,7 +218,13 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-3 border-t border-gray-200 dark:border-gray-800 pt-4 animate-in fade-in duration-200">
             <Link
-              href="/pricing"
+              href="/"
+              className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              Home
+            </Link>
+            <Link
+              href="/marketing/pricing"
               className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             >
               Pricing
@@ -142,12 +247,30 @@ export function Header() {
             >
               Settings
             </Link>
-            <Link
-              href="/signup"
-              className="block w-full text-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Get Started
-            </Link>
+            {loading ? null : user ? (
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="block w-full text-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { executeAudit, executeQuickAudit } from '@/lib/audit/execute';
 import { z } from 'zod';
 
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Check daily scan limits based on tier
     const limits = {
-      free: 1,
+      free: Infinity, // No limit
       pro: Infinity, // No limit
       agency: Infinity, // No limit
     };
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       : null;
 
     // Reset daily count if it's a new day
-    let scansToday = lastScanDate === today ? profile.scans_today : 0;
+    const scansToday = lastScanDate === today ? profile.scans_today : 0;
 
     const limit = limits[profile.subscription_tier as keyof typeof limits];
     if (scansToday >= limit) {
@@ -100,14 +101,19 @@ export async function POST(request: NextRequest) {
         seo_score: null,
         performance_score: null,
         nextjs_score: null,
-        overall_score: null,
       })
       .select()
       .single();
 
     if (scanError) {
+      console.error('[API] Failed to create scan:', scanError);
       return NextResponse.json(
-        { error: 'Failed to create scan' },
+        {
+          error: 'Failed to create scan',
+          ...(process.env.NODE_ENV !== 'production'
+            ? { detail: scanError.message, code: scanError.code }
+            : null),
+        },
         { status: 500 }
       );
     }
@@ -147,10 +153,18 @@ async function runAuditInBackground(
   fullAudit: boolean
 ) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Mark scan as running
-    await supabase.from('scans').update({ status: 'running' }).eq('id', scanId);
+    {
+      const { error } = await supabase
+        .from('scans')
+        .update({ status: 'running' })
+        .eq('id', scanId);
+      if (error) {
+        console.error('[Background Job] Failed to mark scan running:', error);
+      }
+    }
 
     // Run the appropriate audit
     const auditResult = fullAudit
@@ -159,13 +173,19 @@ async function runAuditInBackground(
 
     if (!auditResult.success) {
       // Update scan with error
-      await supabase
-        .from('scans')
-        .update({
-          status: 'failed',
-          error_message: auditResult.error || 'Unknown error',
-        })
-        .eq('id', scanId);
+      {
+        const { error } = await supabase
+          .from('scans')
+          .update({
+            status: 'failed',
+            error_message: auditResult.error || 'Unknown error',
+          })
+          .eq('id', scanId);
+
+        if (error) {
+          console.error('[Background Job] Failed to mark scan failed:', error);
+        }
+      }
 
       console.error(
         `[Background Job] Audit ${scanId} failed:`,
@@ -177,33 +197,63 @@ async function runAuditInBackground(
     const report = auditResult.report!;
 
     // Update scan with results
-    await supabase
-      .from('scans')
-      .update({
-        status: 'completed',
-        seo_score: report.scores.seo,
-        performance_score: report.scores.performance,
-        nextjs_score: report.scores.nextjs,
-        overall_score: report.scores.overall,
-        lighthouse_data: report.lighthouseData || null,
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', scanId);
+    {
+      const { error } = await supabase
+        .from('scans')
+        .update({
+          status: 'completed',
+          seo_score: report.scores.seo,
+          performance_score: report.scores.performance,
+          nextjs_score: report.scores.nextjs,
+          // Store the full audit metadata (SEO/performance/Next.js)
+          // so the results page can render detailed metrics.
+          lighthouse_data: report.metadata || null,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', scanId);
+
+      if (error) {
+        console.error('[Background Job] Failed to mark scan completed:', error);
+      }
+    }
 
     // Insert issues into audit_issues table
-    const issues = report.issues.map((issue: any) => ({
+    const mapSeverityForDb = (
+      severity: string
+    ): 'error' | 'warning' | 'info' => {
+      // DB constraint: severity IN ('info', 'warning', 'error')
+      // Audit engine emits: 'critical' | 'high' | 'medium' | 'low'
+      switch (severity) {
+        case 'critical':
+        case 'high':
+        case 'error':
+          return 'error';
+        case 'medium':
+        case 'warning':
+          return 'warning';
+        case 'low':
+        case 'info':
+        default:
+          return 'info';
+      }
+    };
+
+    const issues = report.issues.map((issue) => ({
       scan_id: scanId,
       category: issue.category,
-      severity: issue.severity,
+      severity: mapSeverityForDb(issue.severity),
       rule_id: issue.rule,
       title: issue.message,
       message: issue.suggestion || '',
       fix_suggestion: issue.suggestion,
-      metadata: issue.metadata || {},
+      metadata: { original_severity: issue.severity },
     }));
 
     if (issues.length > 0) {
-      await supabase.from('audit_issues').insert(issues);
+      const { error } = await supabase.from('audit_issues').insert(issues);
+      if (error) {
+        console.error('[Background Job] Failed to insert issues:', error);
+      }
     }
 
     // Update user's daily scan count and last_scan_date
@@ -237,12 +287,16 @@ async function runAuditInBackground(
 
     // Try to update scan status as failed
     try {
-      const supabase = await createClient();
+      const supabase = createAdminClient();
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Internal server error during audit';
       await supabase
         .from('scans')
         .update({
           status: 'failed',
-          error_message: 'Internal server error during audit',
+          error_message: message,
         })
         .eq('id', scanId);
     } catch {

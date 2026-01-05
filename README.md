@@ -88,6 +88,116 @@ type AuditIssue = {
 
 ---
 
+## 🔍 How a Scan Works (URL → Audit → Score)
+
+At a high level, RouteRank turns a URL into:
+
+- A **scan record** (`scans` table) with status + scores
+- A list of **issues** (`audit_issues` table) with fix suggestions
+- A computed **overall score + letter grade** derived from category scores
+
+### 1) User submits a URL
+
+- The Scan page renders the form: `app/(dashboard)/scan/page.tsx`
+- The form submits to the API: `POST /api/scan` (`app/api/scan/route.ts`)
+
+The API immediately returns `202 Accepted` so the UI doesn’t block while the audit runs.
+
+### 2) The server creates a scan and runs the audit
+
+`POST /api/scan`:
+
+- Validates the request + checks auth
+- Creates a `scans` row with `status='pending'`
+- Kicks off a background-style audit function (`runAuditInBackground`)
+
+When the audit starts, the scan is marked `running`. When it finishes, it is marked `completed` (or `failed` if something breaks).
+
+### 3) Fetch HTML safely
+
+The audit engine fetches the target page’s HTML using SSRF protections and limits:
+
+- `lib/audit/fetcher.ts`
+
+This step normalizes URLs, blocks private/internal IP ranges, enforces timeouts/size limits, and returns the HTML string used by the analyzers.
+
+### 4) Analyze SEO, Performance, and Next.js best practices
+
+The core orchestrator is:
+
+- `lib/audit/execute.ts`
+
+It runs three analyzers and combines their findings:
+
+- **SEO checks (HTML-based)**: `lib/audit/seo.ts`
+
+  - Title/meta description/canonical/viewport
+  - OpenGraph/Twitter tags
+  - Heading structure (H1)
+  - Image alt text checks
+
+- **Next.js best-practices checks (HTML heuristics)**: `lib/audit/nextjs.ts`
+
+  - next/image usage detection
+  - Font loading hints (next/font vs external)
+  - Blocking scripts / third-party scripts
+  - Produces simple “checks” booleans used in the UI
+
+- **Performance checks (PageSpeed Insights / Lighthouse data)**: `lib/audit/performance.ts`
+  - Core metrics like LCP/CLS/TTFB/Speed Index when configured
+  - Falls back to placeholders if `PAGESPEED_INSIGHTS_API_KEY` is not set
+
+Each analyzer returns:
+
+- A category score (0–100)
+- A set of issues with severity + suggested fixes
+- Some metadata (e.g., SEO meta values, performance metrics, Next.js checks)
+
+### 5) Score + grade
+
+Scoring is computed in:
+
+- `lib/audit/scoring.ts`
+
+RouteRank generates:
+
+- **SEO score** (0–100)
+- **Performance score** (0–100)
+- **Next.js score** (0–100)
+- **Overall score** as a weighted average (SEO 40%, Performance 40%, Next.js 20%)
+- **Letter grade** (A–F)
+
+Issues are prioritized so the UI can show the highest-impact fixes first.
+
+### 6) Persist results (Supabase)
+
+When the audit completes, the background process updates the database:
+
+- Updates the scan row with scores + metadata (`lighthouse_data`) and marks it `completed`
+- Inserts issues into `audit_issues` (with DB-safe severities: `error|warning|info`)
+
+Table definitions live in:
+
+- `supabase/migrations/20260102_initial_schema.sql`
+
+### 7) Show results in the UI
+
+The results page is:
+
+- `app/(dashboard)/scan/[id]/page.tsx`
+
+It calls:
+
+- `GET /api/scans/[id]` (`app/api/scans/[id]/route.ts`)
+
+While a scan is `pending`/`running`, the page polls for updates. When the scan reaches `completed`/`failed`, polling stops and the final results are rendered:
+
+- Scores + breakdown
+- Detailed metrics (Core Web Vitals + metadata)
+- Actionable “How to get a higher score” recommendations
+
+---
+
 ## 🖥️ UI Pages
 
 - **Landing Page** – value prop, sample report, pricing
