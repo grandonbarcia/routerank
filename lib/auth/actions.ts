@@ -105,16 +105,15 @@ export async function signIn(formData: { email: string; password: string }) {
   }
 }
 
-export async function signOut() {
-  try {
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect('/');
-  } catch {
-    return {
-      error: 'Failed to sign out',
-    };
+export async function signOut(): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    throw new Error(error.message || 'Failed to sign out');
   }
+
+  redirect('/');
 }
 
 export async function resetPassword(formData: { email: string }) {

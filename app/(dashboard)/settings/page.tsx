@@ -3,21 +3,10 @@
 import { useUser } from '@/hooks/use-user';
 import Link from 'next/link';
 import { Loader, LogOut } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { signOut } from '@/lib/auth/actions';
 
 export default function SettingsPage() {
   const { user, profile, loading } = useUser();
-  const router = useRouter();
-  const { success: showSuccess } = useToast();
-
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    showSuccess('Signed out successfully');
-    router.push('/');
-  };
 
   if (loading) {
     return (
@@ -161,13 +150,15 @@ export default function SettingsPage() {
           <p className="mt-2 text-sm text-red-800 dark:text-red-300">
             These actions cannot be undone.
           </p>
-          <button
-            onClick={handleSignOut}
-            className="mt-4 flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-white font-semibold hover:bg-red-700 transition"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="mt-4 flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-white font-semibold hover:bg-red-700 transition"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </form>
         </div>
       </div>
     </div>

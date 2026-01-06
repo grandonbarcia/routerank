@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useTheme } from './providers';
@@ -79,6 +80,30 @@ const testimonials = [
   },
 ];
 
+const howItWorksSteps = [
+  {
+    title: 'Create your account',
+    description: 'Get access to your dashboard and scanning tools.',
+    body: 'Sign up in under a minute. Once you’re in, RouteRank unlocks the Dashboard, Scan, Settings, and History pages.',
+    imageSrc: '/window.svg',
+    imageAlt: 'Account setup illustration',
+  },
+  {
+    title: 'Scan a URL',
+    description: 'Paste a page and let RouteRank analyze it.',
+    body: 'Open Scan, paste a URL (a marketing page or a specific route), then run a scan. RouteRank checks SEO fundamentals, performance signals, and Next.js best practices.',
+    imageSrc: '/globe.svg',
+    imageAlt: 'URL scanning illustration',
+  },
+  {
+    title: 'Fix issues and track progress',
+    description: 'Turn findings into changes you can verify.',
+    body: 'Review the recommendations, fix what matters most, then rescan. Use History to compare results over time and confirm improvements.',
+    imageSrc: '/file.svg',
+    imageAlt: 'Report and improvements illustration',
+  },
+];
+
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isSticky, setIsSticky] = useState(false);
@@ -113,83 +138,130 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 pt-16">
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 pt-32 pb-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden px-4 pt-40 pb-24 sm:px-6 lg:px-8">
+        {/* Background Ornaments */}
+        <div className="absolute top-0 -left-20 w-160 h-160 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+        <div className="absolute top-40 -right-20 w-120 h-120 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-200 h-160 bg-pink-400/10 dark:bg-pink-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-7xl relative">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
             {/* Hero Content */}
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/30 px-4 py-2 w-fit">
-                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
+            <div className="space-y-12">
+              <div className="group inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/50 backdrop-blur-md dark:border-blue-900/40 dark:bg-blue-950/30 px-6 py-3 w-fit shadow-xl shadow-blue-500/10 hover:scale-105 transition-transform duration-300">
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                <span className="text-xs font-black tracking-[0.2em] text-blue-600 dark:text-blue-300 uppercase">
                   Built for Next.js developers
                 </span>
               </div>
 
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white leading-tight">
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black text-gray-900 dark:text-white leading-[0.95] tracking-tighter">
                 Your Next.js Site Deserves{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Better SEO
                 </span>
               </h1>
 
-              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed">
+              <p className="text-2xl text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed font-medium">
                 RouteRank isn&apos;t a generic SEO tool. We understand App
-                Routers, metadata APIs, image optimization, and the things that
-                matter to Next.js developers. Get actionable insights, not
-                buzzwords.
+                Routers, metadata APIs, and performance. Get actionable insights
+                that turn into real growth.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-6">
                 <Link
                   href="/signup"
-                  className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-4 text-lg font-semibold text-white hover:shadow-lg transition-all duration-200"
+                  className="group inline-flex items-center justify-center gap-3 rounded-[2rem] bg-gray-900 dark:bg-white px-10 py-6 text-xl font-black text-white dark:text-gray-900 hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-gray-900/20 dark:shadow-white/10"
                 >
                   Start Scanning Free
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform" />
                 </Link>
                 <a
                   href="#features"
-                  className="inline-flex items-center justify-center rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-8 py-4 text-lg font-semibold text-gray-900 dark:text-gray-100 hover:border-blue-600 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="inline-flex items-center justify-center rounded-[2rem] border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-10 py-6 text-xl font-black text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-300"
                 >
-                  Learn More
+                  Discover Features
                 </a>
               </div>
 
-              <div className="flex items-center gap-4 pt-4">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
+              <div className="flex items-center gap-8 pt-6">
+                <div className="flex -space-x-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
                       key={i}
-                      className="h-5 w-5 fill-yellow-400 text-yellow-400"
-                    />
+                      className="h-14 w-14 rounded-full border-4 border-white dark:border-gray-950 bg-linear-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 overflow-hidden flex items-center justify-center text-base font-black text-blue-600 dark:text-blue-400 shadow-lg"
+                    >
+                      {String.fromCharCode(64 + i)}
+                    </div>
                   ))}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Trusted by 500+ developers worldwide
-                </p>
+                <div className="space-y-1.5">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-5 w-5 fill-yellow-400 text-yellow-400"
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm font-black text-gray-600 dark:text-gray-400">
+                    Trusted by 500+ expert devs
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Hero Illustration */}
-            <div className="relative hidden lg:block">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950/40 dark:to-purple-950/40 rounded-2xl blur-2xl opacity-50"></div>
-              <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-950 rounded-2xl p-8 border border-blue-100 dark:border-gray-800 shadow-xl">
-                <div className="space-y-4">
-                  <div className="h-4 bg-gradient-to-r from-blue-200 to-blue-300 dark:from-blue-900/40 dark:to-blue-800/40 rounded w-3/4"></div>
-                  <div className="h-4 bg-gradient-to-r from-blue-200 to-blue-300 dark:from-blue-900/40 dark:to-blue-800/40 rounded w-2/3"></div>
-                  <div className="pt-8 grid grid-cols-3 gap-4">
-                    {['SEO', 'Performance', 'Next.js'].map((label, i) => (
+            <div className="relative group/hero-ui">
+              <div className="absolute -inset-8 bg-linear-to-br from-blue-500/30 to-purple-500/30 dark:from-blue-600/20 dark:to-purple-600/20 rounded-[4rem] blur-[80px] group-hover/hero-ui:blur-[100px] transition-all duration-700"></div>
+              <div className="relative bg-white dark:bg-gray-900 rounded-[3.5rem] p-12 border border-gray-100 dark:border-gray-800 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.1)] dark:shadow-none">
+                <div className="space-y-10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2.5">
+                      <div className="h-4 w-4 rounded-full bg-red-400/80"></div>
+                      <div className="h-4 w-4 rounded-full bg-yellow-400/80"></div>
+                      <div className="h-4 w-4 rounded-full bg-green-400/80"></div>
+                    </div>
+                    <div className="px-5 py-2 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/50 shadow-sm shadow-emerald-500/10">
+                      System Optimized
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="h-6 bg-gray-50 dark:bg-gray-800/50 rounded-full w-full"></div>
+                    <div className="h-6 bg-gray-50 dark:bg-gray-800/50 rounded-full w-2/3"></div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-8 pt-4">
+                    {[
+                      { label: 'SEO', val: 92, color: 'text-blue-600' },
+                      { label: 'Perf', val: 98, color: 'text-orange-500' },
+                      { label: 'Next', val: 100, color: 'text-purple-600' },
+                    ].map((stat, i) => (
                       <div
                         key={i}
-                        className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-blue-200 dark:border-gray-800"
+                        className="bg-gray-50 dark:bg-gray-800/50 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 text-center hover:scale-105 transition-transform duration-500"
                       >
-                        <div className="text-2xl font-bold text-blue-600 mb-1">
-                          92
+                        <div
+                          className={`text-5xl font-black ${stat.color} mb-2 tracking-tighter`}
+                        >
+                          {stat.val}
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          {label}
+                        <div className="text-[11px] uppercase font-black text-gray-500 dark:text-gray-400 tracking-[0.2em]">
+                          {stat.label}
                         </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Faux Chart Area */}
+                  <div className="h-44 w-full bg-gray-50 dark:bg-gray-800/50 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 flex items-end p-8 gap-4">
+                    {[60, 40, 80, 50, 90, 70, 100].map((h, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 bg-linear-to-t from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg shadow-indigo-500/20"
+                        style={{ height: `${h}%` }}
+                      ></div>
                     ))}
                   </div>
                 </div>
@@ -202,102 +274,205 @@ export default function Home() {
       {/* Features Section */}
       <section
         id="features"
-        className="px-4 py-20 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900"
+        className="px-4 py-40 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/40 relative overflow-hidden"
       >
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Everything We Check
+        {/* Background Ornaments */}
+        <div className="absolute top-0 right-0 w-120 h-120 bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-120 h-120 bg-purple-400/10 dark:bg-purple-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-gray-200 dark:via-gray-800 to-transparent"></div>
+
+        <div className="mx-auto max-w-7xl relative">
+          <div className="text-center mb-28">
+            <h2 className="text-6xl sm:text-8xl font-black text-gray-900 dark:text-white mb-10 tracking-tighter">
+              The{' '}
+              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Full
+              </span>{' '}
+              Audit
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Built specifically for Next.js. Not like generic SEO tools.
+            <p className="text-2xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto font-medium leading-relaxed">
+              We go deeper than generic SEO tools. We analyze your entire
+              Next.js stack for optimization opportunities.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
             {/* SEO Feature */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-lg transition-shadow duration-300">
-              <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center mb-6">
-                <Gauge className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="group bg-white dark:bg-gray-800 rounded-[3.5rem] border border-gray-100 dark:border-gray-700 p-14 hover:shadow-[0_32px_96px_-16px_rgba(59,130,246,0.15)] hover:-translate-y-3 transition-all duration-500">
+              <div className="h-24 w-24 rounded-[2.5rem] bg-blue-600 flex items-center justify-center mb-12 shadow-[0_20px_40px_-8px_rgba(59,130,246,0.4)] group-hover:rotate-12 transition-transform duration-500">
+                <Gauge className="h-12 w-12 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 tracking-tighter">
                 SEO Foundation
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Comprehensive SEO audit with title, meta descriptions, OpenGraph
-                tags, heading structure, and more.
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-10 leading-relaxed font-medium">
+                Comprehensive SEO audit with title, meta descriptions, and
+                semantic structure.
               </p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Title & meta validation
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  OpenGraph tags
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Heading hierarchy
-                </li>
+              <ul className="space-y-5">
+                {[
+                  'Metadata API Validation',
+                  'OpenGraph & Social Tags',
+                  'Heading Hierarchy Check',
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-5 text-sm font-black text-gray-700 dark:text-gray-300"
+                  >
+                    <div className="shrink-0 h-7 w-7 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Performance Feature */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-lg transition-shadow duration-300">
-              <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center mb-6">
-                <Zap className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            <div className="group bg-white dark:bg-gray-800 rounded-[3.5rem] border border-gray-100 dark:border-gray-700 p-14 hover:shadow-[0_32px_96px_-16px_rgba(249,115,22,0.15)] hover:-translate-y-3 transition-all duration-500">
+              <div className="h-24 w-24 rounded-[2.5rem] bg-orange-500 flex items-center justify-center mb-12 shadow-[0_20px_40px_-8px_rgba(249,115,22,0.4)] group-hover:-rotate-12 transition-transform duration-500">
+                <Zap className="h-12 w-12 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                Performance Metrics
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 tracking-tighter">
+                Prime Flow
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Lighthouse scores, Core Web Vitals, image optimization, and
-                resource analysis.
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-10 leading-relaxed font-medium">
+                Core Web Vitals monitoring and automatic image optimization
+                audits.
               </p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Lighthouse audits
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Core Web Vitals
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Image optimization
-                </li>
+              <ul className="space-y-5">
+                {[
+                  'Lighthouse Score Analysis',
+                  'Core Web Vitals Monitoring',
+                  'Image Compression Audit',
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-5 text-sm font-black text-gray-700 dark:text-gray-300"
+                  >
+                    <div className="shrink-0 h-7 w-7 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Next.js Best Practices */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-lg transition-shadow duration-300">
-              <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-950 flex items-center justify-center mb-6">
-                <Code2 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <div className="group bg-white dark:bg-gray-800 rounded-[3.5rem] border border-gray-100 dark:border-gray-700 p-14 hover:shadow-[0_32px_96px_-16px_rgba(139,92,246,0.15)] hover:-translate-y-3 transition-all duration-500">
+              <div className="h-24 w-24 rounded-[2.5rem] bg-purple-600 flex items-center justify-center mb-12 shadow-[0_20px_40px_-8px_rgba(139,92,246,0.4)] group-hover:rotate-12 transition-transform duration-500">
+                <Code2 className="h-12 w-12 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                Next.js Best Practices
+              <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6 tracking-tighter">
+                Next-Gen Tech
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                App Router intelligence, metadata API usage, and code-level fix
-                suggestions.
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-10 leading-relaxed font-medium">
+                App Router intelligence and code-level fixes specifically for
+                Next.js.
               </p>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Metadata coverage
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Route analysis
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                  Code fixes
-                </li>
+              <ul className="space-y-5">
+                {[
+                  'Server Component Audit',
+                  'Route-Based Intelligence',
+                  'Actionable Code Snippets',
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-5 text-sm font-black text-gray-700 dark:text-gray-300"
+                  >
+                    <div className="shrink-0 h-7 w-7 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section
+        id="how-it-works"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 relative overflow-hidden"
+      >
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-160 h-160 bg-blue-100/30 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-160 h-160 bg-purple-100/30 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-7xl relative">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              How it works in{' '}
+              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                3 simple steps
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              We&apos;ve streamlined the process of optimizing your Next.js site
+              from start to finish.
+            </p>
+          </div>
+
+          <div className="relative">
+            {/* Desktop Stepped Line */}
+            <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-blue-200 dark:via-blue-900/40 to-transparent -translate-y-1/2"></div>
+
+            <div className="grid md:grid-cols-3 gap-12 lg:gap-16">
+              {howItWorksSteps.map((step, index) => (
+                <div
+                  key={step.title}
+                  className="group relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-8 pt-12 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center"
+                >
+                  {/* Step Number Badge */}
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-blue-700 text-white font-bold shadow-xl group-hover:scale-110 transition-transform duration-500 ring-4 ring-white dark:ring-gray-950">
+                    {index + 1}
+                  </div>
+
+                  {/* Icon Container */}
+                  <div className="relative mb-8 p-5 bg-blue-50 dark:bg-blue-950/40 rounded-2xl group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60 transition-colors duration-500">
+                    <div className="relative h-16 w-16">
+                      <Image
+                        src={step.imageSrc}
+                        alt={step.imageAlt}
+                        fill
+                        className="object-contain drop-shadow-md"
+                        sizes="64px"
+                        priority={index === 0}
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+                    {step.title}
+                  </h3>
+                  <div className="inline-block px-3 py-1 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider rounded-full mb-4">
+                    {step.description}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {step.body}
+                  </p>
+
+                  {/* Decorative faint number in background */}
+                  <span className="absolute bottom-4 right-6 text-8xl font-black text-gray-50 dark:text-gray-800/20 select-none pointer-events-none group-hover:text-blue-50 dark:group-hover:text-blue-900/10 transition-colors duration-500">
+                    0{index + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center mt-20">
+            <Link
+              href="/signup"
+              className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-600 to-blue-700 px-10 py-5 text-lg font-bold text-white hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300"
+            >
+              Start Your First Scan
+              <ArrowRight className="h-6 w-6 group-hover:translate-x-1.5 transition-transform" />
+            </Link>
           </div>
         </div>
       </section>
@@ -305,12 +480,18 @@ export default function Home() {
       {/* Analytics & Data Visualization Section */}
       <section
         id="charts"
-        className="px-4 py-20 sm:px-6 lg:px-8 bg-white dark:bg-gray-950"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 relative overflow-hidden"
       >
-        <div className="mx-auto max-w-7xl">
+        {/* Background Ornaments */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-160 h-160 bg-indigo-100/20 dark:bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-7xl relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Performance Insights
+              Performance{' '}
+              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Insights
+              </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Watch your scores improve over time with actionable
@@ -429,12 +610,18 @@ export default function Home() {
       {/* Testimonials Section */}
       <section
         id="testimonials"
-        className="px-4 py-20 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 dark:from-gray-900 to-white dark:to-gray-950"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-blue-50/50 dark:from-gray-900/40 to-white dark:to-gray-950 relative overflow-hidden"
       >
-        <div className="mx-auto max-w-7xl">
+        {/* Background Ornaments */}
+        <div className="absolute top-0 right-0 w-120 h-120 bg-blue-100/30 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-7xl relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Loved by Developers
+              Loved by{' '}
+              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Developers
+              </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               See what developers are saying about RouteRank
@@ -498,12 +685,19 @@ export default function Home() {
       {/* Pricing Section */}
       <section
         id="pricing"
-        className="px-4 py-20 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-gray-900 relative overflow-hidden"
       >
-        <div className="mx-auto max-w-7xl">
+        {/* Background Ornaments */}
+        <div className="absolute bottom-0 right-0 w-160 h-160 bg-blue-100/20 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-7xl relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Simple, Transparent Pricing
+              Simple,{' '}
+              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Transparent
+              </span>{' '}
+              Pricing
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Choose the perfect plan for your needs
@@ -527,19 +721,19 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     1 scan per day
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Score summary
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Basic audit report
                   </span>
@@ -554,7 +748,7 @@ export default function Home() {
             </div>
 
             {/* Pro Plan - Featured */}
-            <div className="bg-gradient-to-br from-blue-50 dark:from-blue-950/30 to-white dark:to-gray-900 rounded-xl border-2 border-blue-600 p-8 relative shadow-xl">
+            <div className="bg-linear-to-br from-blue-50 dark:from-blue-950/30 to-white dark:to-gray-900 rounded-xl border-2 border-blue-600 p-8 relative shadow-xl">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
                 Most Popular
               </div>
@@ -572,25 +766,25 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Unlimited scans
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Full audit breakdown
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Code fix suggestions
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     PDF export
                   </span>
@@ -598,7 +792,7 @@ export default function Home() {
               </ul>
               <Link
                 href="/signup"
-                className="w-full block text-center px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold hover:shadow-lg transition-shadow"
+                className="w-full block text-center px-6 py-3 rounded-lg bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold hover:shadow-lg transition-shadow"
               >
                 Start Free Trial
               </Link>
@@ -620,25 +814,25 @@ export default function Home() {
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Everything in Pro
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Multiple sites
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     White-label PDFs
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300">
                     Priority support
                   </span>
@@ -656,21 +850,25 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-900 dark:to-blue-800">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+      <section className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
+        {/* Background Ornaments */}
+        <div className="absolute top-0 left-0 w-120 h-120 bg-white/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-0 w-120 h-120 bg-white/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="mx-auto max-w-3xl text-center relative z-10">
+          <h2 className="text-4xl sm:text-6xl font-black text-white mb-8 tracking-tighter">
             Ready to Ship Better Next.js Sites?
           </h2>
-          <p className="text-xl text-blue-100 dark:text-blue-200 mb-8 max-w-2xl mx-auto">
+          <p className="text-2xl text-blue-50/80 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
             Join 500+ developers who trust RouteRank to optimize their Next.js
             applications. Start with 1 free scan today.
           </p>
           <Link
             href="/signup"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg bg-white text-blue-600 font-semibold hover:bg-blue-50 dark:hover:bg-gray-100 transition-colors shadow-lg"
+            className="group inline-flex items-center justify-center gap-3 px-12 py-6 rounded-[2rem] bg-white text-blue-600 text-xl font-black hover:scale-105 transition-all duration-300 shadow-2xl shadow-blue-500/20"
           >
             Start Your Free Scan
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform" />
           </Link>
         </div>
       </section>
@@ -682,7 +880,7 @@ export default function Home() {
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-linear-to-br from-blue-600 to-blue-700 flex items-center justify-center">
                   <Rocket className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-lg font-bold text-white">RouteRank</span>

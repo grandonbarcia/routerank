@@ -55,7 +55,10 @@ export async function analyzePerformance(
 ): Promise<PerformanceResult> {
   try {
     // Try to use PageSpeed Insights API if available
-    const apiKey = process.env.PAGESPEED_INSIGHTS_API_KEY;
+    const apiKey =
+      process.env.PAGESPEED_INSIGHTS_API_KEY ||
+      process.env.GOOGLE_PAGESPEED_INSIGHTS_API_KEY ||
+      process.env.PAGESPEED_API_KEY;
     if (!apiKey) {
       console.warn(
         '[Performance Audit] PageSpeed Insights API key not configured'

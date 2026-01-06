@@ -145,7 +145,7 @@ It runs three analyzers and combines their findings:
 
 - **Performance checks (PageSpeed Insights / Lighthouse data)**: `lib/audit/performance.ts`
   - Core metrics like LCP/CLS/TTFB/Speed Index when configured
-  - Falls back to placeholders if `PAGESPEED_INSIGHTS_API_KEY` is not set
+  - Falls back to placeholders if `PAGESPEED_INSIGHTS_API_KEY` is not set (see `.env.example`)
 
 Each analyzer returns:
 

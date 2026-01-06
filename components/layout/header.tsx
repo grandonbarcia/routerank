@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react';
 import { Menu, Moon, Rocket, Sun, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/app/providers';
 import { useUser } from '@/hooks/use-user';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from '@/lib/auth/actions';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -14,8 +13,6 @@ export function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { user, profile, loading } = useUser();
-  const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     const handleScroll = () => setIsSticky(window.scrollY > 100);
@@ -23,17 +20,6 @@ export function Header() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUserMenuOpen(false);
-      router.push('/');
-      router.refresh();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
 
   return (
     <nav
@@ -69,24 +55,38 @@ export function Header() {
             >
               Pricing
             </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/scan"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Scan
-            </Link>
-            <Link
-              href="/settings"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Settings
-            </Link>
+
+            {!loading && !user && (
+              <Link
+                href="/#how-it-works"
+                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                How it works
+              </Link>
+            )}
+
+            {!loading && user && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/scan"
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Scan
+                </Link>
+                <Link
+                  href="/settings"
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Settings
+                </Link>
+              </>
+            )}
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -146,13 +146,15 @@ export function Header() {
                     >
                       Settings
                     </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
+                    <form action={signOut}>
+                      <button
+                        type="submit"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </form>
                   </div>
                 )}
               </div>
@@ -229,32 +231,48 @@ export function Header() {
             >
               Pricing
             </Link>
-            <Link
-              href="/dashboard"
-              className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/scan"
-              className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Scan
-            </Link>
-            <Link
-              href="/settings"
-              className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Settings
-            </Link>
-            {loading ? null : user ? (
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+
+            {!loading && !user && (
+              <Link
+                href="/#how-it-works"
+                className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
               >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+                How it works
+              </Link>
+            )}
+
+            {!loading && user && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/scan"
+                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Scan
+                </Link>
+                <Link
+                  href="/settings"
+                  className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                >
+                  Settings
+                </Link>
+              </>
+            )}
+            {loading ? null : user ? (
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </form>
             ) : (
               <>
                 <Link
