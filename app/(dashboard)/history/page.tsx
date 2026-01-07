@@ -70,24 +70,24 @@ export default function HistoryPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
       case 'running':
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
   const getScoreColor = (score: number | null) => {
-    if (score === null) return 'text-gray-400';
-    if (score >= 90) return 'text-green-600 font-bold';
-    if (score >= 80) return 'text-blue-600 font-bold';
-    if (score >= 70) return 'text-yellow-600 font-bold';
-    if (score >= 60) return 'text-orange-600 font-bold';
-    return 'text-red-600 font-bold';
+    if (score === null) return 'text-gray-400 dark:text-gray-500';
+    if (score >= 90) return 'text-green-600 dark:text-green-400 font-bold';
+    if (score >= 80) return 'text-blue-600 dark:text-blue-400 font-bold';
+    if (score >= 70) return 'text-yellow-600 dark:text-yellow-400 font-bold';
+    if (score >= 60) return 'text-orange-600 dark:text-orange-400 font-bold';
+    return 'text-red-600 dark:text-red-400 font-bold';
   };
 
   const handleRescan = async (id: string) => {
@@ -117,11 +117,15 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
-        <div className="flex items-center justify-center rounded-lg border border-gray-200 py-12">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Scan History
+        </h1>
+        <div className="flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 py-12 bg-white dark:bg-gray-800">
           <div className="text-center">
-            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-gray-600" />
-            <p className="mt-4 text-gray-600">Loading history...</p>
+            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-gray-600 dark:text-gray-400" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              Loading history...
+            </p>
           </div>
         </div>
       </div>
@@ -133,8 +137,12 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
-          <p className="mt-1 text-gray-600">{scans.length} audits completed</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Scan History
+          </h1>
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
+            {scans.length} audits completed
+          </p>
         </div>
         <Link
           href="/scan"
@@ -147,20 +155,22 @@ export default function HistoryPage() {
 
       {/* Error State */}
       {error && (
-        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
-          <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
-          <p className="text-red-700">{error}</p>
+        <div className="flex gap-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4">
+          <AlertCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+          <p className="text-red-700 dark:text-red-400">{error}</p>
         </div>
       )}
 
       {/* Empty State */}
       {scans.length === 0 && !error && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Clock className="h-6 w-6 text-gray-400" />
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center">
+          <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+            <Clock className="h-6 w-6 text-gray-400 dark:text-gray-500" />
           </div>
-          <p className="text-lg font-semibold text-gray-900">No scans yet</p>
-          <p className="mt-1 text-gray-600">
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+            No scans yet
+          </p>
+          <p className="mt-1 text-gray-600 dark:text-gray-400">
             Start by running your first website audit
           </p>
           <Link
@@ -175,46 +185,51 @@ export default function HistoryPage() {
 
       {/* Scans Table */}
       {scans.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200 bg-gray-50">
+              <thead className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Website
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Overall Score
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     SEO
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Performance
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Next.js
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Date
                   </th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {scans.map((scan) => (
-                  <tr key={scan.id} className="hover:bg-gray-50 transition">
+                  <tr
+                    key={scan.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                  >
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium text-gray-900 truncate">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">
                           {scan.url}
                         </p>
-                        <p className="text-xs text-gray-500">{scan.domain}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {scan.domain}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -270,19 +285,19 @@ export default function HistoryPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {new Date(scan.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {scan.status === 'completed' ? (
                         <Link
                           href={`/scan/${scan.id}`}
-                          className="inline-flex items-center gap-1 rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50"
+                          className="inline-flex items-center gap-1 rounded px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                         >
                           View
                         </Link>
                       ) : (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
                           Processing...
                         </span>
                       )}

@@ -2,11 +2,19 @@
 
 import { useUser } from '@/hooks/use-user';
 import Link from 'next/link';
-import { Loader, LogOut } from 'lucide-react';
+import { Loader, LogOut, Bell, Shield, Copy, Check } from 'lucide-react';
 import { signOut } from '@/lib/auth/actions';
+import { useState } from 'react';
 
 export default function SettingsPage() {
   const { user, profile, loading } = useUser();
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (loading) {
     return (
@@ -58,8 +66,43 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 User ID
               </p>
-              <p className="mt-1 font-mono text-sm text-gray-900 dark:text-white">
-                {user?.id || 'N/A'}
+              <div className="mt-1 flex items-center gap-2">
+                <p className="font-mono text-sm text-gray-900 dark:text-white">
+                  {user?.id ? user.id.substring(0, 20) + '...' : 'N/A'}
+                </p>
+                {user?.id && (
+                  <button
+                    onClick={() => copyToClipboard(user.id)}
+                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                    title="Copy User ID"
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+            {profile?.full_name && (
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Full Name
+                </p>
+                <p className="mt-1 font-medium text-gray-900 dark:text-white">
+                  {profile.full_name}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Member Since
+              </p>
+              <p className="mt-1 font-medium text-gray-900 dark:text-white">
+                {user?.created_at
+                  ? new Date(user.created_at).toLocaleDateString()
+                  : 'N/A'}
               </p>
             </div>
           </div>

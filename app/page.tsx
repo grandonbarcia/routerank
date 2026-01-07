@@ -104,6 +104,38 @@ const howItWorksSteps = [
   },
 ];
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${siteUrl.replace(/\/$/, '')}/#organization`,
+      name: 'RouteRank',
+      url: siteUrl,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl.replace(/\/$/, '')}/#website`,
+      url: siteUrl,
+      name: 'RouteRank',
+      publisher: { '@id': `${siteUrl.replace(/\/$/, '')}/#organization` },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      name: 'RouteRank',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Web',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        category: 'Free',
+      },
+    },
+  ],
+};
+
 export default function Home() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isSticky, setIsSticky] = useState(false);
@@ -136,9 +168,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 pt-16">
+    <div className="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 pt-40 pb-24 sm:px-6 lg:px-8">
+      <section
+        className="relative overflow-hidden px-4 pb-24 sm:px-6 lg:px-8 pt-32 flex items-center"
+        style={{ minHeight: 'calc(100vh - 64px)' }}
+      >
         {/* Background Ornaments */}
         <div className="absolute top-0 -left-20 w-160 h-160 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
         <div className="absolute top-40 -right-20 w-120 h-120 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -274,7 +313,7 @@ export default function Home() {
       {/* Features Section */}
       <section
         id="features"
-        className="px-4 py-40 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/40 relative overflow-hidden"
+        className="px-4 py-40 sm:px-6 lg:px-8 bg-linear-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 relative overflow-hidden"
       >
         {/* Background Ornaments */}
         <div className="absolute top-0 right-0 w-120 h-120 bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
@@ -397,7 +436,7 @@ export default function Home() {
       {/* How It Works Section */}
       <section
         id="how-it-works"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 relative overflow-hidden"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 relative overflow-hidden"
       >
         {/* Decorative Background Elements */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-160 h-160 bg-blue-100/30 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -480,7 +519,7 @@ export default function Home() {
       {/* Analytics & Data Visualization Section */}
       <section
         id="charts"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 relative overflow-hidden"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-white to-blue-50/30 dark:from-gray-950 dark:to-gray-900/50 relative overflow-hidden"
       >
         {/* Background Ornaments */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-160 h-160 bg-indigo-100/20 dark:bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
@@ -610,7 +649,7 @@ export default function Home() {
       {/* Testimonials Section */}
       <section
         id="testimonials"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-blue-50/50 dark:from-gray-900/40 to-white dark:to-gray-950 relative overflow-hidden"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-blue-50/40 dark:from-gray-900/60 to-gray-50/80 dark:to-gray-900/40 relative overflow-hidden"
       >
         {/* Background Ornaments */}
         <div className="absolute top-0 right-0 w-120 h-120 bg-blue-100/30 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -685,7 +724,7 @@ export default function Home() {
       {/* Pricing Section */}
       <section
         id="pricing"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-gray-900 relative overflow-hidden"
+        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-gray-50/80 to-white dark:from-gray-900/40 dark:to-gray-950 relative overflow-hidden"
       >
         {/* Background Ornaments */}
         <div className="absolute bottom-0 right-0 w-160 h-160 bg-blue-100/20 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>

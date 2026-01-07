@@ -1,5 +1,23 @@
+import type { Metadata } from 'next';
 import { PRICING } from '@/lib/constants';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Pricing',
+  description:
+    'RouteRank pricing for Next.js SEO & performance audits. Start free, upgrade to Pro for unlimited scans, or Agency for white-label reports.',
+  openGraph: {
+    title: 'Pricing | RouteRank',
+    description:
+      'Start free, upgrade to Pro for unlimited scans, or Agency for white-label reports.',
+    url: '/marketing/pricing',
+  },
+  twitter: {
+    title: 'Pricing | RouteRank',
+    description:
+      'Start free, upgrade to Pro for unlimited scans, or Agency for white-label reports.',
+  },
+};
 
 export default function PricingPage() {
   return (

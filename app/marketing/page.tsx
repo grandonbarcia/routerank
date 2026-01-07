@@ -1,4 +1,22 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Next.js SEO Audits',
+  description:
+    'SEO audits built for Next.js: metadata validation, OpenGraph, robots tags, heading structure, Core Web Vitals, and App Router best practices.',
+  openGraph: {
+    title: 'Next.js SEO Audits | RouteRank',
+    description:
+      'Audit your Next.js site for SEO + performance with App Router-aware checks and actionable fixes.',
+    url: '/marketing',
+  },
+  twitter: {
+    title: 'Next.js SEO Audits | RouteRank',
+    description:
+      'Audit your Next.js site for SEO + performance with App Router-aware checks and actionable fixes.',
+  },
+};
 
 export default function Home() {
   return (
