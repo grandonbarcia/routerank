@@ -98,8 +98,10 @@ export async function analyzePerformance(
       );
     }
 
-    const data = await response.json();
-    const lighthouseReport = data.lighthouseResult;
+    const data = (await response.json()) as {
+      lighthouseResult?: unknown;
+    };
+    const lighthouseReport = data.lighthouseResult as any;
 
     if (!lighthouseReport) {
       return getDefaultPerformanceResult(

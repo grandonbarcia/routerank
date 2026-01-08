@@ -11,11 +11,13 @@ export const metadata: Metadata = {
     description:
       'Start free, upgrade to Pro for unlimited scans, or Agency for white-label reports.',
     url: '/marketing/pricing',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
   },
   twitter: {
     title: 'Pricing | RouteRank',
     description:
       'Start free, upgrade to Pro for unlimited scans, or Agency for white-label reports.',
+    images: ['/twitter-image'],
   },
 };
 

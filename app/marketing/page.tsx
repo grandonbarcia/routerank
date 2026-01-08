@@ -10,11 +10,13 @@ export const metadata: Metadata = {
     description:
       'Audit your Next.js site for SEO + performance with App Router-aware checks and actionable fixes.',
     url: '/marketing',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
   },
   twitter: {
     title: 'Next.js SEO Audits | RouteRank',
     description:
       'Audit your Next.js site for SEO + performance with App Router-aware checks and actionable fixes.',
+    images: ['/twitter-image'],
   },
 };
 

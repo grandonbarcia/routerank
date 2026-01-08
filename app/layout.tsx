@@ -1,76 +1,134 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from './providers';
 import { Header } from '@/components/layout/header';
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 const siteName = 'RouteRank';
 const defaultTitle = 'RouteRank - SEO & Performance Audits for Next.js';
 const defaultDescription =
-  'Actionable SEO audits and performance insights built specifically for Next.js App Router';
+  'Next.js-specific SEO audits and performance insights with actionable fixes for metadata, Core Web Vitals, and App Router best practices.';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  applicationName: siteName,
-  title: {
-    default: defaultTitle,
-    template: `%s | ${siteName}`,
-  },
-  description: defaultDescription,
-  keywords: [
-    'Next.js SEO',
-    'Next.js audit',
-    'Core Web Vitals',
-    'technical SEO',
-    'App Router',
-    'performance audit',
-    'RouteRank',
-  ],
-  creator: siteName,
-  publisher: siteName,
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico' },
+async function resolveSiteUrl(): Promise<URL> {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) return new URL(envUrl);
+
+  const hdrs = await headers();
+  const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
+  const proto = hdrs.get('x-forwarded-proto') ?? 'https';
+
+  if (host) return new URL(`${proto}://${host}`);
+  return new URL('http://localhost:3000');
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = await resolveSiteUrl();
+
+  return {
+    metadataBase: siteUrl,
+    applicationName: siteName,
+    title: {
+      default: defaultTitle,
+      template: `%s | ${siteName}`,
+    },
+    description: defaultDescription,
+    keywords: [
+      'Next.js SEO',
+      'Next.js audit',
+      'Core Web Vitals',
+      'technical SEO',
+      'App Router',
+      'performance audit',
+      'RouteRank',
     ],
-    apple: ['/apple-icon'],
-  },
-  openGraph: {
-    type: 'website',
-    url: '/',
-    siteName,
-    title: defaultTitle,
-    description: defaultDescription,
-    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: defaultTitle,
-    description: defaultDescription,
-    images: ['/twitter-image'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    creator: siteName,
+    publisher: siteName,
+    alternates: {
+      canonical: './',
+    },
+    icons: {
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.ico' },
+      ],
+      apple: ['/apple-icon'],
+    },
+    openGraph: {
+      type: 'website',
+      url: './',
+      siteName,
+      title: defaultTitle,
+      description: defaultDescription,
+      images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: defaultTitle,
+      description: defaultDescription,
+      images: ['/twitter-image'],
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-      'max-video-preview': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+        'max-video-preview': -1,
+      },
     },
-  },
-};
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = (await resolveSiteUrl()).origin;
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${siteUrl.replace(/\/$/, '')}/#organization`,
+        name: siteName,
+        url: siteUrl,
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${siteUrl.replace(/\/$/, '')}/#website`,
+        url: siteUrl,
+        name: siteName,
+        publisher: { '@id': `${siteUrl.replace(/\/$/, '')}/#organization` },
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: siteName,
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Web',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'USD',
+          category: 'Free',
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="en">
       <body className="antialiased">
+        <Script
+          id="structured-data"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <Providers>
           <Header />
           {children}

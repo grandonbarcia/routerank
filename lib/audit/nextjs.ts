@@ -122,7 +122,23 @@ export function analyzeNextjs(html: string): NextjsResult {
   }
 
   // Check for blocking scripts
-  const scripts = $('script:not([async]):not([defer]):not([type*="json"])');
+  // Only consider *external* scripts with a src attribute.
+  // Ignore Next.js internal scripts and module scripts (module scripts are deferred by default).
+  const scripts = $(
+    'script[src]:not([async]):not([defer]):not([type="module"])'
+  ).filter((_, el) => {
+    const src = $(el).attr('src')?.trim() || '';
+    if (!src) return false;
+
+    // Ignore Next.js internal assets
+    if (src.startsWith('/_next/') || src.includes('/_next/')) return false;
+
+    // Ignore scripts managed by next/script
+    if ($(el).attr('data-nscript')) return false;
+
+    return true;
+  });
+
   if (scripts.length > 0) {
     issues.push({
       category: 'nextjs',

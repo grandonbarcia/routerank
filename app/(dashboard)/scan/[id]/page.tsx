@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { PDFExport } from '@/components/scan/pdf-export';
+import { MDExport } from '@/components/scan/md-export';
 import {
   AlertCircle,
   CheckCircle2,
@@ -387,14 +388,14 @@ export default function ScanResultPage() {
     switch (severity) {
       case 'error':
       case 'critical':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200';
       case 'warning':
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-200';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200';
     }
   };
 
@@ -420,11 +421,15 @@ export default function ScanResultPage() {
   if (loading && !data) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">Audit Results</h1>
-        <div className="flex flex-col items-center justify-center rounded-lg border border-blue-200 bg-blue-50 py-16">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          Audit Results
+        </h1>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 py-16">
           <Loader className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="mt-4 text-lg text-blue-700">Scanning your website...</p>
-          <p className="mt-2 text-sm text-blue-600">
+          <p className="mt-4 text-lg text-blue-700 dark:text-blue-200">
+            Scanning your website...
+          </p>
+          <p className="mt-2 text-sm text-blue-600 dark:text-blue-300">
             This may take a couple of minutes. Please don&apos;t refresh the
             page.
           </p>
@@ -437,16 +442,18 @@ export default function ScanResultPage() {
   if (error || !data) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">Audit Results</h1>
-        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          Audit Results
+        </h1>
+        <div className="flex gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-6">
           <AlertCircle className="h-6 w-6 shrink-0 text-red-600" />
           <div>
-            <p className="font-semibold text-red-800">
+            <p className="font-semibold text-red-800 dark:text-red-200">
               {error || 'Scan not found'}
             </p>
             <Link
               href="/scan"
-              className="mt-3 inline-block text-red-700 hover:underline"
+              className="mt-3 inline-block text-red-700 dark:text-red-300 hover:underline"
             >
               Start a new audit
             </Link>
@@ -482,17 +489,17 @@ export default function ScanResultPage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Audit in Progress
           </h1>
-          <p className="mt-2 text-gray-600">{scan.url}</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">{scan.url}</p>
         </div>
-        <div className="flex flex-col items-center justify-center rounded-lg border border-yellow-200 bg-yellow-50 py-16">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30 py-16">
           <Loader className="h-8 w-8 animate-spin text-yellow-600" />
-          <p className="mt-4 text-lg text-yellow-700">
+          <p className="mt-4 text-lg text-yellow-700 dark:text-yellow-200">
             Scanning your website...
           </p>
-          <p className="mt-2 text-sm text-yellow-600">
+          <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-300">
             {scan.status === 'pending' ? 'Starting audit' : 'Analyzing content'}
             ... This page will auto-refresh every 2 seconds.
           </p>
@@ -506,7 +513,9 @@ export default function ScanResultPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Audit Failed</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Audit Failed
+          </h1>
           <Link
             href="/scan"
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
@@ -515,11 +524,13 @@ export default function ScanResultPage() {
             Try Again
           </Link>
         </div>
-        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-6">
+        <div className="flex gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-6">
           <AlertCircle className="h-6 w-6 shrink-0 text-red-600" />
           <div>
-            <p className="font-semibold text-red-800">Audit Failed</p>
-            <p className="mt-1 text-sm text-red-700">
+            <p className="font-semibold text-red-800 dark:text-red-200">
+              Audit Failed
+            </p>
+            <p className="mt-1 text-sm text-red-700 dark:text-red-300">
               {scan.errorMessage || 'Unknown error'}
             </p>
           </div>
@@ -534,9 +545,11 @@ export default function ScanResultPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Audit Results</h1>
-          <p className="mt-2 text-gray-600">{scan.url}</p>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Audit Results
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">{scan.url}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Completed{' '}
             {new Date(scan.completedAt || scan.createdAt).toLocaleString()}
           </p>
@@ -552,10 +565,12 @@ export default function ScanResultPage() {
 
       {/* Overall Score */}
       {scan.overallScore !== null && (
-        <div className="rounded-lg border border-gray-200 bg-white p-8">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Overall Score</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                Overall Score
+              </p>
               <p
                 className={`text-5xl font-bold ${getScoreColor(
                   scan.overallScore
@@ -574,7 +589,8 @@ export default function ScanResultPage() {
                   cy="60"
                   r="54"
                   fill="none"
-                  stroke="#e5e7eb"
+                  stroke="currentColor"
+                  className="text-gray-200 dark:text-gray-700"
                   strokeWidth="8"
                 />
                 <circle
@@ -582,17 +598,20 @@ export default function ScanResultPage() {
                   cy="60"
                   r="54"
                   fill="none"
-                  stroke="#3b82f6"
+                  stroke="currentColor"
+                  className="text-blue-600 dark:text-blue-500"
                   strokeWidth="8"
                   strokeDasharray={`${(scan.overallScore / 100) * 339.3} 339.3`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute text-center">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {Math.round(scan.overallScore)}
                 </p>
-                <p className="text-xs text-gray-600">out of 100</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">
+                  out of 100
+                </p>
               </div>
             </div>
           </div>
@@ -622,11 +641,13 @@ export default function ScanResultPage() {
                 onClick={() => setSelectedTab(cat.key)}
                 className={`rounded-lg border p-6 text-left transition ${
                   selectedTab === cat.key
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30'
+                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'
                 }`}
               >
-                <p className="text-sm font-medium text-gray-600">{cat.label}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  {cat.label}
+                </p>
                 <p
                   className={`mt-2 text-3xl font-bold ${getScoreColor(
                     cat.score
@@ -641,22 +662,26 @@ export default function ScanResultPage() {
 
       {/* Detailed Metrics */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900">Detailed Metrics</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Detailed Metrics
+        </h2>
 
         <div className="grid gap-4 md:grid-cols-3">
           {/* Overview */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <p className="text-sm font-medium text-gray-600">Overview</p>
-            <div className="mt-4 space-y-2 text-sm text-gray-700">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Overview
+            </p>
+            <div className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-300">
               <div className="flex items-center justify-between">
                 <span>Total issues</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {issues.length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Critical</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {(severityCounts.error || 0) +
                     (severityCounts.critical || 0) +
                     (severityCounts.high || 0)}
@@ -664,13 +689,13 @@ export default function ScanResultPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span>Warnings</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {(severityCounts.warning || 0) + (severityCounts.medium || 0)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Info</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {(severityCounts.info || 0) + (severityCounts.low || 0)}
                 </span>
               </div>
@@ -678,30 +703,32 @@ export default function ScanResultPage() {
           </div>
 
           {/* Performance */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <p className="text-sm font-medium text-gray-600">Performance</p>
-            <div className="mt-4 space-y-2 text-sm text-gray-700">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Performance
+            </p>
+            <div className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-300">
               <div className="flex items-center justify-between">
                 <span>LCP</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {formatSecondsFromMs(performance?.lcpMs)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>CLS</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {formatNumber(performance?.clsScore, 3)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>TTFB</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {formatMs(performance?.ttfbMs)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Speed Index</span>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {formatSecondsFromMs(performance?.speedIndex)}
                 </span>
               </div>
@@ -709,48 +736,54 @@ export default function ScanResultPage() {
           </div>
 
           {/* SEO / Next.js */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <p className="text-sm font-medium text-gray-600">SEO & Next.js</p>
-            <div className="mt-4 space-y-3 text-sm text-gray-700">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              SEO & Next.js
+            </p>
+            <div className="mt-4 space-y-3 text-sm text-gray-700 dark:text-gray-300">
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500">SEO</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  SEO
+                </p>
                 <div className="flex items-center justify-between">
                   <span>Title</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {seo?.title ? `${seo.title.length} chars` : '-'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Description</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {seo?.description ? `${seo.description.length} chars` : '-'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Canonical</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {seo?.canonical ? 'Present' : seo ? 'Missing' : '-'}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-gray-500">Next.js</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  Next.js
+                </p>
                 <div className="flex items-center justify-between">
                   <span>Uses next/image</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {formatBool(nextjs?.usesNextImage)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Uses next/font</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {formatBool(nextjs?.usesNextFont)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Uses Metadata API</span>
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
                     {formatBool(nextjs?.usesMetadataApi)}
                   </span>
                 </div>
@@ -761,17 +794,17 @@ export default function ScanResultPage() {
       </div>
 
       {/* How to improve score */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             How to get a higher score
           </h2>
           {topImprovements.length > 0 ? (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Top {topImprovements.length} highest-impact fixes
             </p>
           ) : (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Suggestions based on metrics
             </p>
           )}
@@ -782,7 +815,7 @@ export default function ScanResultPage() {
             topImprovements.map((issue) => (
               <div
                 key={issue.id}
-                className="rounded-lg border border-gray-200 p-4"
+                className="rounded-lg border border-gray-200 dark:border-gray-800 p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -794,7 +827,7 @@ export default function ScanResultPage() {
                       >
                         {issue.severity.toUpperCase()}
                       </span>
-                      <span className="text-xs font-medium text-gray-500">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {issue.category === 'nextjs'
                           ? 'Next.js'
                           : issue.category.charAt(0).toUpperCase() +
@@ -802,10 +835,10 @@ export default function ScanResultPage() {
                       </span>
                     </div>
 
-                    <p className="mt-2 font-semibold text-gray-900">
+                    <p className="mt-2 font-semibold text-gray-900 dark:text-gray-100">
                       {issue.title}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                       {issue.fix_suggestion || issue.message}
                     </p>
                   </div>
@@ -823,28 +856,30 @@ export default function ScanResultPage() {
             metricSuggestions.map((s) => (
               <div
                 key={`${s.category}-${s.title}`}
-                className="rounded-lg border border-gray-200 p-4"
+                className="rounded-lg border border-gray-200 dark:border-gray-800 p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-500">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {s.category === 'nextjs'
                           ? 'Next.js'
                           : s.category.charAt(0).toUpperCase() +
                             s.category.slice(1)}
                       </span>
                     </div>
-                    <p className="mt-2 font-semibold text-gray-900">
+                    <p className="mt-2 font-semibold text-gray-900 dark:text-gray-100">
                       {s.title}
                     </p>
-                    <p className="mt-1 text-sm text-gray-600">{s.detail}</p>
+                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                      {s.detail}
+                    </p>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               No specific improvement opportunities detected from the available
               metrics.
             </p>
@@ -855,10 +890,12 @@ export default function ScanResultPage() {
       {/* Issues by Category */}
       {issues.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">Issues Found</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Issues Found
+          </h2>
 
           {/* Category Tabs */}
-          <div className="flex gap-2 border-b border-gray-200">
+          <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
             {(['seo', 'performance', 'nextjs'] as const).map((category) => {
               const count = issues.filter(
                 (i) => i.category === category
@@ -870,7 +907,7 @@ export default function ScanResultPage() {
                   className={`px-4 py-2 font-medium transition border-b-2 ${
                     selectedTab === category
                       ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
                   }`}
                 >
                   {category === 'nextjs'
@@ -890,7 +927,7 @@ export default function ScanResultPage() {
                 <div
                   key={issue.id}
                   id={`issue-${issue.id}`}
-                  className="rounded-lg border border-gray-200 bg-white p-6"
+                  className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6"
                 >
                   <div className="flex items-start gap-3">
                     <span
@@ -901,28 +938,28 @@ export default function ScanResultPage() {
                       {issue.severity.toUpperCase()}
                     </span>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         {issue.title}
                       </h3>
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                         {issue.message}
                       </p>
 
                       {issue.fix_suggestion && (
-                        <div className="mt-3 rounded-md bg-blue-50 p-3">
-                          <p className="text-xs font-semibold text-blue-900">
+                        <div className="mt-3 rounded-md bg-blue-50 dark:bg-blue-950/30 p-3">
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">
                             Suggestion:
                           </p>
-                          <p className="mt-1 text-sm text-blue-800">
+                          <p className="mt-1 text-sm text-blue-800 dark:text-blue-200">
                             {issue.fix_suggestion}
                           </p>
                         </div>
                       )}
 
                       {issue.fix_code && (
-                        <div className="mt-3 rounded-md border border-gray-300 bg-gray-50 p-3">
+                        <div className="mt-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 p-3">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-gray-900">
+                            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">
                               Code Example:
                             </p>
                             <button
@@ -957,12 +994,12 @@ export default function ScanResultPage() {
 
       {/* No Issues */}
       {issues.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-green-200 bg-green-50 py-12">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 py-12">
           <CheckCircle2 className="h-12 w-12 text-green-600" />
-          <p className="mt-4 text-lg font-semibold text-green-800">
+          <p className="mt-4 text-lg font-semibold text-green-800 dark:text-green-200">
             No Major Issues Found!
           </p>
-          <p className="mt-2 text-sm text-green-700">
+          <p className="mt-2 text-sm text-green-700 dark:text-green-300">
             Your site is in excellent shape.
           </p>
         </div>
@@ -971,9 +1008,10 @@ export default function ScanResultPage() {
       {/* Actions */}
       <div className="flex gap-4">
         <PDFExport scanId={scan.id} />
+        <MDExport scanId={scan.id} />
         <Link
           href="/history"
-          className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-semibold hover:bg-gray-50"
+          className="rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition"
         >
           View History
         </Link>

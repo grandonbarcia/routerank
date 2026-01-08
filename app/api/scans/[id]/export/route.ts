@@ -106,6 +106,76 @@ export async function GET(
       generatedAt: new Date().toISOString(),
     };
 
+    if (format === 'md') {
+      const filename = whiteLabel
+        ? `audit-report-${scan.domain}.md`
+        : `routerank-audit-${scan.domain}.md`;
+
+      const markdownLines: string[] = [];
+      markdownLines.push(`# Audit Report`);
+      markdownLines.push('');
+      markdownLines.push(`- URL: ${reportData.scan.url}`);
+      markdownLines.push(`- Domain: ${reportData.scan.domain}`);
+      markdownLines.push(
+        `- Completed: ${new Date(
+          reportData.scan.completedAt || reportData.scan.createdAt
+        ).toISOString()}`
+      );
+      markdownLines.push(`- Generated: ${reportData.generatedAt}`);
+      markdownLines.push('');
+      markdownLines.push('## Scores');
+      markdownLines.push('');
+      markdownLines.push(`- Overall: ${reportData.scan.overallScore ?? '-'}`);
+      markdownLines.push(
+        `- Performance: ${reportData.scan.performanceScore ?? '-'}`
+      );
+      markdownLines.push(`- SEO: ${reportData.scan.seoScore ?? '-'}`);
+      markdownLines.push(`- Next.js: ${reportData.scan.nextjsScore ?? '-'}`);
+      markdownLines.push('');
+      markdownLines.push(`## Issues (${reportData.issues.length})`);
+      markdownLines.push('');
+
+      if (reportData.issues.length === 0) {
+        markdownLines.push('No issues found.');
+      } else {
+        markdownLines.push('| Category | Severity | Title |');
+        markdownLines.push('| --- | --- | --- |');
+        for (const issue of reportData.issues) {
+          const safeTitle = issue.title.replace(/\|/g, '\\|');
+          markdownLines.push(
+            `| ${issue.category} | ${issue.severity} | ${safeTitle} |`
+          );
+        }
+
+        markdownLines.push('');
+        markdownLines.push('### Details');
+        markdownLines.push('');
+        for (const issue of reportData.issues) {
+          markdownLines.push(`#### ${issue.title}`);
+          markdownLines.push('');
+          markdownLines.push(`- Category: ${issue.category}`);
+          markdownLines.push(`- Severity: ${issue.severity}`);
+          markdownLines.push('');
+          markdownLines.push(issue.message);
+          if (issue.fixSuggestion) {
+            markdownLines.push('');
+            markdownLines.push(`**Suggestion:** ${issue.fixSuggestion}`);
+          }
+          markdownLines.push('');
+        }
+      }
+
+      const markdown = markdownLines.join('\n');
+
+      return new NextResponse(markdown, {
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
     if (format === 'pdf') {
       const element = AuditPdfDocument({ data: reportData, whiteLabel });
       const buffer = await renderToBuffer(element);

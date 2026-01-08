@@ -47,6 +47,9 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 STRIPE_PRO_PRICE_ID=price_xxx
 STRIPE_AGENCY_PRICE_ID=price_xxx
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
+
+# Optional: enables real performance metrics (PageSpeed Insights / Lighthouse)
+PAGESPEED_INSIGHTS_API_KEY=your_value
 ```
 
 ---
