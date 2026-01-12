@@ -6,7 +6,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Activity, RefreshCw, BarChart3, User } from 'lucide-react';
+import {
+  TrendingUp,
+  Activity,
+  RefreshCw,
+  BarChart3,
+  User,
+  LogIn,
+} from 'lucide-react';
 
 interface Scan {
   id: string;
@@ -17,7 +24,7 @@ interface Scan {
 }
 
 export default function DashboardPage() {
-  const { user, profile } = useUser();
+  const { user, profile, loading: userLoading } = useUser();
   const { error: showError } = useToast();
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,8 +46,10 @@ export default function DashboardPage() {
 
     if (user) {
       fetchScans();
+    } else if (!userLoading) {
+      setLoading(false);
     }
-  }, [user, showError]);
+  }, [user, userLoading, showError]);
 
   const completedScans = scans.filter((s) => s.status === 'completed');
   const averageScore =
@@ -60,10 +69,88 @@ export default function DashboardPage() {
     return 'text-red-600';
   };
 
+  // Show logged-out view
+  if (!userLoading && !user) {
+    return (
+      <div className="space-y-8">
+        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-12 text-center">
+          <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg mb-6">
+            <BarChart3 className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Dashboard Access
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+            Sign in to access your personalized dashboard, track scan history,
+            and monitor your website&apos;s performance over time.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            >
+              <LogIn className="h-5 w-5" />
+              Log In
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg"
+            >
+              Create Free Account
+            </Link>
+          </div>
+          <div className="mt-8 pt-8 border-t border-blue-200 dark:border-blue-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Want to try it out first?
+            </p>
+            <Link
+              href="/scan"
+              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Run a free scan without signing up
+            </Link>
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <Activity className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              Track All Scans
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Save and organize all your website audits in one place
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <TrendingUp className="h-8 w-8 text-green-600 mb-4" />
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              Monitor Progress
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Track improvements and see how your scores change over time
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <BarChart3 className="h-8 w-8 text-purple-600 mb-4" />
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              Detailed Reports
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Get comprehensive analysis with actionable recommendations
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* User Profile Section */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-8">
+      {/* User Profile Section */}gradient
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-8">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -100,14 +187,14 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Subscription Info */}
+        {/* Account Info */}
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div>
             <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-              Current Plan
+              Plan
             </p>
             <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white capitalize">
-              {profile?.subscription_tier || 'Free'}
+              Free
             </p>
           </div>
           <div>
@@ -138,7 +225,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
       {/* Welcome Section (kept for compatibility) */}
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -148,7 +234,6 @@ export default function DashboardPage() {
           Manage your audits and track performance metrics
         </p>
       </div>
-
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-3">
         <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
@@ -194,22 +279,13 @@ export default function DashboardPage() {
                 Plan
               </p>
               <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white capitalize">
-                {profile?.subscription_tier || 'Free'}
+                Free
               </p>
-              {profile?.subscription_tier === 'free' && (
-                <Link
-                  href="/pricing"
-                  className="mt-3 text-sm text-blue-600 hover:underline"
-                >
-                  Upgrade Plan →
-                </Link>
-              )}
             </div>
             <TrendingUp className="h-8 w-8 text-purple-600 opacity-20" />
           </div>
         </div>
       </div>
-
       {/* Quick Actions */}
       <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -232,7 +308,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-
       {/* Recent Scans */}
       <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
         <div className="flex items-center justify-between mb-6">
@@ -289,26 +364,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* Upgrade Prompt */}
-      {profile?.subscription_tier === 'free' && completedScans.length >= 1 && (
-        <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-6">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-200">
-            Ready to audit more?
-          </h3>
-          <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
-            Upgrade to Pro for unlimited audits, detailed code suggestions, and
-            PDF exports.
-          </p>
-          <Link
-            href="/pricing"
-            className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700"
-          >
-            <TrendingUp className="h-4 w-4" />
-            View Plans
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

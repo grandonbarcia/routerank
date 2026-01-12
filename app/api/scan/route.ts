@@ -22,17 +22,6 @@ const createScanSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Parse request body
     const body = await request.json();
     const validation = createScanSchema.safeParse(body);
@@ -45,6 +34,45 @@ export async function POST(request: NextRequest) {
     }
 
     const { url, fullAudit } = validation.data;
+
+    // Get authenticated user (optional: guests are allowed)
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error('[API] Auth error:', authError);
+      return NextResponse.json(
+        { error: 'Authentication error' },
+        { status: 500 }
+      );
+    }
+
+    // Guest flow: run audit immediately and return the report (not persisted)
+    if (!user) {
+      const auditResult = fullAudit
+        ? await executeAudit({ url, userId: 'guest' })
+        : await executeQuickAudit({ url, userId: 'guest' });
+
+      if (!auditResult.success || !auditResult.report) {
+        return NextResponse.json(
+          { error: auditResult.error || 'Failed to run audit' },
+          { status: 400, headers: { 'Cache-Control': 'no-store' } }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          status: 'completed',
+          url: auditResult.url || url,
+          report: auditResult.report,
+          guest: true,
+        },
+        { status: 200, headers: { 'Cache-Control': 'no-store' } }
+      );
+    }
 
     // Check user's plan and scan quota
     const { data: profile, error: profileError } = await supabase

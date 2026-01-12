@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
+import { useUser } from '@/hooks/use-user';
 import {
   CheckCircle2,
   Zap,
@@ -13,8 +14,6 @@ import {
   ArrowRight,
   Star,
   Rocket,
-  ChevronLeft,
-  ChevronRight,
   Github,
   Linkedin,
   Twitter,
@@ -24,36 +23,6 @@ const AnalyticsSection = dynamic(
   () => import('@/components/landing/analytics-section'),
   { ssr: false }
 );
-
-const testimonials = [
-  {
-    id: 1,
-    name: 'Sarah Chen',
-    role: 'Frontend Developer',
-    company: 'TechStartup Inc',
-    content:
-      'RouteRank finally understands Next.js the way I do. The code-level fixes save me hours of debugging.',
-    avatar: '👩‍💻',
-  },
-  {
-    id: 2,
-    name: 'Marcus Johnson',
-    role: 'Agency Owner',
-    company: 'Digital Creative Co',
-    content:
-      'Our clients love the detailed reports. RouteRank makes us look like SEO experts.',
-    avatar: '👨‍💼',
-  },
-  {
-    id: 3,
-    name: 'Elena Rodriguez',
-    role: 'Full Stack Engineer',
-    company: 'SaaS Solutions',
-    content:
-      'The performance metrics are spot-on. Helped us optimize our site from 62 to 94 score.',
-    avatar: '👩‍🔬',
-  },
-];
 
 const howItWorksSteps = [
   {
@@ -80,8 +49,9 @@ const howItWorksSteps = [
 ];
 
 export default function Home() {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isSticky, setIsSticky] = useState(false);
+  const { user, loading: userLoading } = useUser();
+  const startScanHref = user && !userLoading ? '/dashboard' : '/scan';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -90,16 +60,6 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const nextTestimonial = () => {
-    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-  };
-
-  const prevTestimonial = () => {
-    setCurrentTestimonial(
-      (prev) => (prev - 1 + testimonials.length) % testimonials.length
-    );
-  };
 
   return (
     <div className="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50">
@@ -139,7 +99,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-6">
                 <Link
-                  href="/signup"
+                  href={startScanHref}
                   className="group inline-flex items-center justify-center gap-3 rounded-[2rem] bg-gray-900 dark:bg-white px-10 py-6 text-xl font-black text-white dark:text-gray-900 hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-gray-900/20 dark:shadow-white/10"
                 >
                   Start Scanning Free
@@ -436,7 +396,7 @@ export default function Home() {
 
           <div className="text-center mt-20">
             <Link
-              href="/signup"
+              href={startScanHref}
               className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-600 to-blue-700 px-10 py-5 text-lg font-bold text-white hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300"
             >
               Start Your First Scan
@@ -448,248 +408,6 @@ export default function Home() {
 
       {/* Analytics & Data Visualization Section */}
       <AnalyticsSection />
-
-      {/* Testimonials Section */}
-      <section
-        id="testimonials"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-blue-50/40 dark:from-gray-900/60 to-gray-50/80 dark:to-gray-900/40 relative overflow-hidden"
-      >
-        {/* Background Ornaments */}
-        <div className="absolute top-0 right-0 w-120 h-120 bg-blue-100/30 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="mx-auto max-w-7xl relative">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Loved by{' '}
-              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Developers
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              See what developers are saying about RouteRank
-            </p>
-          </div>
-
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 shadow-lg">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-5 w-5 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-xl text-gray-900 dark:text-gray-100 mb-8 leading-relaxed">
-                &ldquo;{testimonials[currentTestimonial].content}&rdquo;
-              </p>
-
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">
-                  {testimonials[currentTestimonial].avatar}
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white">
-                    {testimonials[currentTestimonial].name}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {testimonials[currentTestimonial].role} at{' '}
-                    {testimonials[currentTestimonial].company}
-                  </p>
-                </div>
-              </div>
-
-              {/* Navigation */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  onClick={prevTestimonial}
-                  className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Previous testimonial"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={nextTestimonial}
-                  className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Next testimonial"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section
-        id="pricing"
-        className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-b from-gray-50/80 to-white dark:from-gray-900/40 dark:to-gray-950 relative overflow-hidden"
-      >
-        {/* Background Ornaments */}
-        <div className="absolute bottom-0 right-0 w-160 h-160 bg-blue-100/20 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="mx-auto max-w-7xl relative">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Simple,{' '}
-              <span className="bg-linear-to-br from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Transparent
-              </span>{' '}
-              Pricing
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Choose the perfect plan for your needs
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Free Plan */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-lg dark:hover:shadow-gray-900 transition-shadow">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Free
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Perfect for getting started
-              </p>
-              <div className="mb-8">
-                <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                  $0
-                </span>
-                <span className="text-gray-600 dark:text-gray-400">/month</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    1 scan per day
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Score summary
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Basic audit report
-                  </span>
-                </li>
-              </ul>
-              <Link
-                href="/signup"
-                className="w-full block text-center px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold text-gray-900 dark:text-white transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-
-            {/* Pro Plan - Featured */}
-            <div className="bg-linear-to-br from-blue-50 dark:from-blue-950/30 to-white dark:to-gray-900 rounded-xl border-2 border-blue-600 p-8 relative shadow-xl">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                Most Popular
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Pro
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                For serious developers
-              </p>
-              <div className="mb-8">
-                <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                  $19
-                </span>
-                <span className="text-gray-600 dark:text-gray-400">/month</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Unlimited scans
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Full audit breakdown
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Code fix suggestions
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    PDF export
-                  </span>
-                </li>
-              </ul>
-              <Link
-                href="/signup"
-                className="w-full block text-center px-6 py-3 rounded-lg bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold hover:shadow-lg transition-shadow"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-
-            {/* Agency Plan */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 hover:shadow-lg transition-shadow">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Agency
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                For teams & agencies
-              </p>
-              <div className="mb-8">
-                <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                  $49
-                </span>
-                <span className="text-gray-600 dark:text-gray-400">/month</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Everything in Pro
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Multiple sites
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    White-label PDFs
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Priority support
-                  </span>
-                </li>
-              </ul>
-              <Link
-                href="/contact"
-                className="w-full block text-center px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold text-gray-900 dark:text-white transition-colors"
-              >
-                Contact Sales
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="px-4 py-32 sm:px-6 lg:px-8 bg-linear-to-br from-blue-600 via-indigo-600 to-purple-700 relative overflow-hidden">
@@ -703,10 +421,10 @@ export default function Home() {
           </h2>
           <p className="text-2xl text-blue-50/80 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
             Join 500+ developers who trust RouteRank to optimize their Next.js
-            applications. Start with 1 free scan today.
+            applications. Start scanning for free today.
           </p>
           <Link
-            href="/signup"
+            href={startScanHref}
             className="group inline-flex items-center justify-center gap-3 px-12 py-6 rounded-[2rem] bg-white text-blue-600 text-xl font-black hover:scale-105 transition-all duration-300 shadow-2xl shadow-blue-500/20"
           >
             Start Your Free Scan
@@ -742,14 +460,6 @@ export default function Home() {
                     className="text-gray-400 dark:text-gray-500 hover:text-blue-400 dark:hover:text-blue-300 transition-colors"
                   >
                     Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="text-gray-400 dark:text-gray-500 hover:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                  >
-                    Pricing
                   </a>
                 </li>
                 <li>

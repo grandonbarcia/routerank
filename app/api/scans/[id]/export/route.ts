@@ -30,27 +30,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
-
-    const subscriptionTier = profile?.subscription_tier as
-      | 'free'
-      | 'pro'
-      | 'agency'
-      | undefined;
-
-    const whiteLabel =
-      subscriptionTier === 'agency' ? true : requestedWhiteLabel;
-
-    if (whiteLabel && subscriptionTier !== 'agency') {
-      return NextResponse.json(
-        { error: 'White-label export is available on the Agency plan.' },
-        { status: 403 }
-      );
-    }
+    const whiteLabel = requestedWhiteLabel;
 
     // Fetch scan with details
     const { data: scan, error: scanError } = await supabase

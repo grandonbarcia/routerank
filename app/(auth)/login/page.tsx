@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { signIn } from '@/lib/auth/actions';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/lib/supabase/client';
@@ -20,16 +19,32 @@ export default function LoginPage() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const result = await signIn({
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-    });
 
-    if (result?.error) {
-      setError(result.error);
-      showError('Error', result.error);
+    try {
+      const supabase = createClient();
+      const email = (formData.get('email') as string) || '';
+      const password = (formData.get('password') as string) || '';
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        showError('Error', signInError.message);
+        setLoading(false);
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
+      showError('Error', message);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleGitHubSignIn = async () => {

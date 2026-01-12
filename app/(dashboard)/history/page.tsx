@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/hooks/use-user';
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,6 +11,8 @@ import {
   MoreVertical,
   RefreshCw,
   Trash2,
+  LogIn,
+  History,
 } from 'lucide-react';
 
 interface Scan {
@@ -26,6 +29,7 @@ interface Scan {
 }
 
 export default function HistoryPage() {
+  const { user, loading: userLoading } = useUser();
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +54,12 @@ export default function HistoryPage() {
       }
     };
 
-    fetchScans();
-  }, [showError]);
+    if (user) {
+      fetchScans();
+    } else if (!userLoading) {
+      setLoading(false);
+    }
+  }, [user, userLoading, showError]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -125,6 +133,75 @@ export default function HistoryPage() {
             <RefreshCw className="mx-auto h-8 w-8 animate-spin text-gray-600 dark:text-gray-400" />
             <p className="mt-4 text-gray-600 dark:text-gray-400">
               Loading history...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show logged-out view
+  if (!user) {
+    return (
+      <div className="space-y-8">
+        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-12 text-center">
+          <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg mb-6">
+            <History className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Scan History
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+            Sign in to view your complete scan history and track your
+            website&apos;s improvements over time.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            >
+              <LogIn className="h-5 w-5" />
+              Log In
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg"
+            >
+              Create Free Account
+            </Link>
+          </div>
+          <div className="mt-8 pt-8 border-t border-blue-200 dark:border-blue-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Try it out first?
+            </p>
+            <Link
+              href="/scan"
+              className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Run a free scan without signing up
+            </Link>
+          </div>
+        </div>
+
+        {/* Benefits */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <CheckCircle2 className="h-8 w-8 text-green-600 mb-4" />
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              Track Every Scan
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Never lose a scan result. All your audits are saved automatically.
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+            <Clock className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+              See Changes Over Time
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Compare scans to understand how your site is improving.
             </p>
           </div>
         </div>

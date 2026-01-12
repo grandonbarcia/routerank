@@ -42,17 +42,18 @@ export async function updateSession(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (isProtectedPath(request.nextUrl.pathname) && !session) {
-    const redirectResponse = NextResponse.redirect(
-      new URL('/login', request.url)
-    );
+  // Route protection disabled - all routes are now public
+  // if (isProtectedPath(request.nextUrl.pathname) && !session) {
+  //   const redirectResponse = NextResponse.redirect(
+  //     new URL('/login', request.url)
+  //   );
 
-    pendingCookiesToSet.forEach(({ name, value, options }) => {
-      redirectResponse.cookies.set(name, value, options);
-    });
+  //   pendingCookiesToSet.forEach(({ name, value, options }) => {
+  //     redirectResponse.cookies.set(name, value, options);
+  //   });
 
-    return redirectResponse;
-  }
+  //   return redirectResponse;
+  // }
 
   return response;
 }

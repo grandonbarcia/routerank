@@ -1,7 +1,206 @@
 'use client';
 
 import { ScanForm } from '@/components/scan/scan-form';
+import { ScoreCard } from '@/components/scan/score-card';
+import { IssueCard, type IssueData } from '@/components/scan/issue-card';
+import type { AuditReport } from '@/lib/audit/execute';
+import { useState } from 'react';
+import {
+  Search,
+  Code2,
+  Zap,
+  CheckCircle2,
+  AlertCircle,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useUser } from '@/hooks/use-user';
 
 export default function ScanPage() {
-  return <ScanForm />;
+  const { user, loading: userLoading } = useUser();
+  const [guestReport, setGuestReport] = useState<{
+    report: AuditReport;
+    url: string;
+  } | null>(null);
+  const [selectedTab, setSelectedTab] = useState<
+    'seo' | 'performance' | 'nextjs'
+  >('seo');
+
+  const handleGuestScanComplete = (report: AuditReport, url: string) => {
+    setGuestReport({ report, url });
+  };
+
+  if (!guestReport) {
+    return (
+      <div className="space-y-6">
+        {/* User Status Banner */}
+        {!userLoading && !user && (
+          <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-200 dark:border-blue-900">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <User className="inline h-4 w-4 mr-2" />
+              Running as a guest.{' '}
+              <Link
+                href="/signup"
+                className="font-semibold underline hover:text-blue-600"
+              >
+                Create an account
+              </Link>{' '}
+              to save your scan history.
+            </p>
+          </div>
+        )}
+        {!userLoading && user && (
+          <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-4 border border-green-200 dark:border-green-900">
+            <p className="text-sm text-green-800 dark:text-green-200">
+              <CheckCircle2 className="inline h-4 w-4 mr-2" />
+              Logged in as <span className="font-semibold">{user.email}</span>.
+              Your scans will be automatically saved.
+            </p>
+          </div>
+        )}
+        <ScanForm onGuestScanComplete={handleGuestScanComplete} />
+      </div>
+    );
+  }
+
+  // Guest results view
+  const { report, url } = guestReport;
+  const issuesByCategory = {
+    seo: report.issues.filter((i) => i.category === 'seo'),
+    performance: report.issues.filter((i) => i.category === 'performance'),
+    nextjs: report.issues.filter((i) => i.category === 'nextjs'),
+  };
+
+  const currentIssues = issuesByCategory[selectedTab];
+
+  const mapIssueToData = (issue: (typeof report.issues)[0]): IssueData => ({
+    id: issue.rule,
+    category: issue.category,
+    severity: issue.severity as 'critical' | 'high' | 'medium' | 'low',
+    rule_id: issue.rule,
+    title: issue.message,
+    message: issue.suggestion,
+    fix_suggestion: issue.suggestion,
+  });
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {user ? 'Scan Results' : 'Guest Scan Results'}
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Scanned: <span className="font-mono text-sm">{url}</span>
+          </p>
+          {!user && (
+            <div className="mt-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-200 dark:border-blue-900">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <CheckCircle2 className="inline h-4 w-4 mr-2" />
+                Want to save your scans and track progress?{' '}
+                <Link
+                  href="/signup"
+                  className="font-semibold underline hover:text-blue-600"
+                >
+                  Create a free account
+                </Link>
+              </p>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setGuestReport(null)}
+          className="rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+        >
+          New Scan
+        </button>
+      </div>
+
+      {/* Score Cards */}
+      <div className="grid gap-6 sm:grid-cols-3">
+        <ScoreCard
+          label="SEO"
+          score={report.scores.seo}
+          icon={<Search className="h-8 w-8 text-blue-600" />}
+          category="seo"
+        />
+        <ScoreCard
+          label="Performance"
+          score={report.scores.performance}
+          icon={<Zap className="h-8 w-8 text-orange-500" />}
+          category="performance"
+        />
+        <ScoreCard
+          label="Next.js"
+          score={report.scores.nextjs}
+          icon={<Code2 className="h-8 w-8 text-purple-600" />}
+          category="nextjs"
+        />
+      </div>
+
+      {/* Overall Summary */}
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          Overall Score: {Math.round(report.scores.overall)}/100 (Grade:{' '}
+          {report.scores.grade})
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400">{report.summary}</p>
+      </div>
+
+      {/* Issues Tabs */}
+      <div>
+        <div className="border-b border-gray-200 dark:border-gray-800">
+          <nav className="flex gap-8">
+            <button
+              onClick={() => setSelectedTab('seo')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                selectedTab === 'seo'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              SEO Issues ({issuesByCategory.seo.length})
+            </button>
+            <button
+              onClick={() => setSelectedTab('performance')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                selectedTab === 'performance'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Performance Issues ({issuesByCategory.performance.length})
+            </button>
+            <button
+              onClick={() => setSelectedTab('nextjs')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                selectedTab === 'nextjs'
+                  ? 'border-purple-600 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Next.js Issues ({issuesByCategory.nextjs.length})
+            </button>
+          </nav>
+        </div>
+
+        {/* Issues List */}
+        <div className="mt-6 space-y-4">
+          {currentIssues.length === 0 ? (
+            <div className="text-center py-12 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
+              <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">
+                No {selectedTab} issues found! Great job! 🎉
+              </p>
+            </div>
+          ) : (
+            currentIssues.map((issue) => (
+              <IssueCard key={issue.rule} issue={mapIssueToData(issue)} />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

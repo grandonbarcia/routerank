@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import type { AuditReport } from '@/lib/audit/execute';
 
 // Validation schema
 const scanFormSchema = z.object({
@@ -34,7 +35,11 @@ const scanFormSchema = z.object({
 type ScanFormInputs = z.input<typeof scanFormSchema>;
 type ScanFormData = z.output<typeof scanFormSchema>;
 
-export function ScanForm() {
+interface ScanFormProps {
+  onGuestScanComplete?: (report: AuditReport, url: string) => void;
+}
+
+export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { error: showError, success: showSuccess } = useToast();
@@ -81,12 +86,27 @@ export function ScanForm() {
         return;
       }
 
-      showSuccess(`Scan started! Analyzing your site...`);
+      // Guest scan (immediate report returned)
+      if (result.guest && result.report) {
+        showSuccess('Scan complete!');
+        setLoading(false);
+        if (onGuestScanComplete) {
+          onGuestScanComplete(result.report, result.url || normalizedUrl);
+        }
+        return;
+      }
 
-      // Redirect to scan results page
-      setTimeout(() => {
-        router.push(`/scan/${result.scanId}`);
-      }, 500);
+      // Authenticated scan (background processing with scanId)
+      if (result.scanId) {
+        showSuccess(`Scan started! Analyzing your site...`);
+        setTimeout(() => {
+          router.push(`/scan/${result.scanId}`);
+        }, 500);
+        return;
+      }
+
+      showError('Unexpected response from server');
+      setLoading(false);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to start scan';

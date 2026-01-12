@@ -1,6 +1,6 @@
-// Scan limits by tier
+// Scan limits (RouteRank is free for everyone)
 export const SCAN_LIMITS = {
-  free: 1,
+  free: Infinity,
   pro: Infinity,
   agency: Infinity,
 } as const;
@@ -26,40 +26,4 @@ export const PATTERNS = {
   URL: /^https?:\/\/.+/i,
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PRIVATE_IP: /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/,
-} as const;
-
-// Stripe pricing
-export const PRICING = {
-  free: {
-    name: 'Free',
-    price: 0,
-    features: [
-      '1 scan per day',
-      'SEO audit',
-      'Performance metrics',
-      'Basic reporting',
-    ],
-  },
-  pro: {
-    name: 'Pro',
-    price: 19,
-    features: [
-      'Unlimited scans',
-      'Full audit breakdown',
-      'Code fix suggestions',
-      'PDF export',
-      'Scan history',
-    ],
-  },
-  agency: {
-    name: 'Agency',
-    price: 49,
-    features: [
-      'Everything in Pro',
-      'Multiple sites',
-      'White-labeled PDFs',
-      'Shareable client links',
-      'Team management',
-    ],
-  },
 } as const;

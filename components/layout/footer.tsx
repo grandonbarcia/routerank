@@ -11,11 +11,6 @@ export function Footer() {
                   Features
                 </a>
               </li>
-              <li>
-                <a href="#" className="hover:text-gray-900">
-                  Pricing
-                </a>
-              </li>
             </ul>
           </div>
           <div>

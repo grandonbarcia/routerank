@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { Menu, Moon, Rocket, Sun, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/app/providers';
 import { useUser } from '@/hooks/use-user';
-import { signOut } from '@/lib/auth/actions';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,6 +14,19 @@ export function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { toggleDarkMode } = useTheme();
   const { user, profile, loading } = useUser();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } finally {
+      setUserMenuOpen(false);
+      setMobileMenuOpen(false);
+      router.push('/');
+      router.refresh();
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsSticky(window.scrollY > 100);
@@ -48,12 +62,6 @@ export function Header() {
               className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
               Home
-            </Link>
-            <Link
-              href="/marketing/pricing"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              Pricing
             </Link>
 
             {!loading && !user && (
@@ -99,7 +107,15 @@ export function Header() {
 
             {/* User Menu or Auth Links */}
             {loading ? null : user ? (
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="hidden md:inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </button>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -118,13 +134,10 @@ export function Header() {
 
                 {/* Dropdown Menu */}
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 py-2">
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50 py-2">
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {profile?.full_name || user?.email}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {profile?.subscription_tier || 'Free'}
                       </p>
                     </div>
                     <Link
@@ -141,15 +154,14 @@ export function Header() {
                     >
                       Settings
                     </Link>
-                    <form action={signOut}>
-                      <button
-                        type="submit"
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
                   </div>
                 )}
               </div>
@@ -212,20 +224,16 @@ export function Header() {
             <Link
               href="/"
               className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+              onClick={() => setMobileMenuOpen(false)}
             >
               Home
-            </Link>
-            <Link
-              href="/marketing/pricing"
-              className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
-            >
-              Pricing
             </Link>
 
             {!loading && !user && (
               <Link
                 href="/#how-it-works"
                 className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                onClick={() => setMobileMenuOpen(false)}
               >
                 How it works
               </Link>
@@ -236,44 +244,48 @@ export function Header() {
                 <Link
                   href="/dashboard"
                   className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/scan"
                   className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Scan
                 </Link>
                 <Link
                   href="/settings"
                   className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Settings
                 </Link>
               </>
             )}
             {loading ? null : user ? (
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
             ) : (
               <>
                 <Link
                   href="/login"
                   className="block text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
                   className="block w-full text-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
                   Get Started
                 </Link>

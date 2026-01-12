@@ -1,14 +1,16 @@
 'use client';
 
 import { useUser } from '@/hooks/use-user';
-import Link from 'next/link';
-import { Loader, LogOut, Bell, Shield, Copy, Check } from 'lucide-react';
+import { Loader, LogOut, Copy, Check, LogIn, Settings } from 'lucide-react';
 import { signOut } from '@/lib/auth/actions';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function SettingsPage() {
   const { user, profile, loading } = useUser();
   const [copied, setCopied] = useState(false);
+
+  const scansToday = profile?.scans_today || 0;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -24,19 +26,65 @@ export default function SettingsPage() {
     );
   }
 
-  const planLimits = {
-    free: { name: 'Free', scansPerDay: 1, price: '$0/month' },
-    pro: { name: 'Pro', scansPerDay: 'Unlimited', price: '$19/month' },
-    agency: {
-      name: 'Agency',
-      scansPerDay: 'Unlimited',
-      price: '$49/month',
-    },
-  };
+  // Show logged-out view
+  if (!user) {
+    return (
+      <div className="space-y-8">
+        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-12 text-center">
+          <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg mb-6">
+            <Settings className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Account Settings
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+            Sign in to manage your account settings, view usage statistics, and
+            customize your experience.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            >
+              <LogIn className="h-5 w-5" />
+              Log In
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg"
+            >
+              Create Free Account
+            </Link>
+          </div>
+        </div>
 
-  const currentPlan =
-    planLimits[profile?.subscription_tier as keyof typeof planLimits] ||
-    planLimits.free;
+        {/* Settings Preview */}
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 opacity-60">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            What You&apos;ll Get
+          </h2>
+          <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              <span>Manage your account information</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              <span>Track your usage and scan statistics</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              <span>Customize your profile settings</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-600" />
+              <span>Unlimited scans - completely free</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -45,7 +93,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Manage your account and subscription
+          Manage your account
         </p>
       </div>
 
@@ -108,80 +156,21 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Subscription Settings */}
+        {/* Usage */}
         <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Subscription
+            Usage
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Manage your subscription and billing
+            RouteRank is free for everyone. Scans are unlimited.
           </p>
-          <div className="mt-6 space-y-4">
-            {/* Current Plan */}
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Current Plan
-                </p>
-                <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
-                  {currentPlan.name}
-                </p>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {currentPlan.price} • {currentPlan.scansPerDay} scans/day
-                </p>
-              </div>
-              {profile?.subscription_tier !== 'agency' && (
-                <Link
-                  href="/marketing/pricing"
-                  className="rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 transition whitespace-nowrap"
-                >
-                  {profile?.subscription_tier === 'pro'
-                    ? 'Upgrade to Agency'
-                    : 'Upgrade Plan'}
-                </Link>
-              )}
-            </div>
-
-            {/* Billing Portal */}
-            {profile?.stripe_subscription_id && (
-              <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Manage your billing method and view invoices in the Stripe
-                  customer portal.
-                </p>
-                <button className="mt-3 rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800">
-                  Open Billing Portal
-                </button>
-              </div>
-            )}
-
-            {/* Usage */}
-            <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Daily Scan Usage
-              </p>
-              <div className="mt-3 flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-                    <div
-                      className="h-2 rounded-full bg-blue-600"
-                      style={{
-                        width: `${Math.min(
-                          ((profile?.scans_today || 0) /
-                            (profile?.subscription_tier === 'free' ? 1 : 10)) *
-                            100,
-                          100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                  {profile?.scans_today || 0} scan
-                  {(profile?.scans_today || 0) !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
+          <div className="mt-6 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Scans Today
+            </p>
+            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+              {scansToday}
+            </p>
           </div>
         </div>
 

@@ -41,12 +41,6 @@ export default function Home() {
             >
               Start Scanning Free
             </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 px-8 py-3 text-lg font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              View Pricing
-            </Link>
           </div>
         </div>
       </section>
@@ -96,8 +90,7 @@ export default function Home() {
             Ready to audit your site?
           </h2>
           <p className="mt-4 text-lg text-blue-100">
-            Free tier includes 1 scan per day. Upgrade to Pro for unlimited
-            scans.
+            RouteRank is free for everyone — unlimited scans included.
           </p>
           <Link
             href="/signup"
