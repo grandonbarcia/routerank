@@ -10,35 +10,61 @@ export default function CallbackSuccessPage() {
 
   useEffect(() => {
     let mounted = true;
+    let redirectTimeout: NodeJS.Timeout;
 
     const handleCallback = async () => {
       try {
+        console.log('Starting OAuth callback handling...');
         const supabase = createClient();
 
-        // Wait for session to be persisted in storage
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Listen for auth state change which will fire when session is ready
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log(
+            'Auth callback - event:',
+            event,
+            'has session:',
+            !!session
+          );
 
-        // Verify session exists
+          if (!mounted) return;
+
+          if (event === 'SIGNED_IN' && session) {
+            console.log('Sign in confirmed! Redirecting to /scan...');
+            // Redirect on next tick to ensure state is fully updated
+            redirectTimeout = setTimeout(() => {
+              window.location.href = '/scan';
+            }, 100);
+          }
+        });
+
+        // Fallback: also check if session already exists
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (!mounted) return;
-
-        if (!session) {
-          console.error('No session found after OAuth');
-          setError('Authentication failed');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
-          return;
+        if (session && mounted) {
+          console.log('Session already exists! Redirecting to /scan...');
+          redirectTimeout = setTimeout(() => {
+            window.location.href = '/scan';
+          }, 100);
+        } else if (!session && mounted) {
+          // Set a timeout in case auth state change doesn't fire
+          redirectTimeout = setTimeout(() => {
+            if (mounted) {
+              console.error('Timeout waiting for session');
+              setError('Authentication timeout');
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 2000);
+            }
+          }, 5000);
         }
 
-        console.log('OAuth success, session established');
-
-        // Use window.location.href for a hard navigation
-        // This ensures the entire app reloads with the new session
-        window.location.href = '/scan';
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (err) {
         if (!mounted) return;
         console.error('Callback error:', err);
@@ -53,8 +79,9 @@ export default function CallbackSuccessPage() {
 
     return () => {
       mounted = false;
+      if (redirectTimeout) clearTimeout(redirectTimeout);
     };
-  }, [router]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">

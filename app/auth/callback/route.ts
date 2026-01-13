@@ -7,11 +7,14 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin;
 
   if (!code) {
+    console.log('No code in callback, redirecting to login');
     return NextResponse.redirect(`${origin}/login`);
   }
 
+  console.log('Processing OAuth callback with code');
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error('OAuth callback error:', error);
@@ -20,6 +23,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Redirect to success page that handles client-side navigation
-  return NextResponse.redirect(`${origin}/auth/callback/success`);
+  console.log('Session exchanged successfully for user:', data.user?.email);
+
+  // Redirect to success page
+  const response = NextResponse.redirect(`${origin}/auth/callback/success`);
+
+  // Ensure cookies are set with proper attributes
+  response.headers.set('Cache-Control', 'no-store, max-age=0');
+
+  return response;
 }
