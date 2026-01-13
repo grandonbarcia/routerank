@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/auth-provider';
+import { useRouter } from 'next/navigation';
 import {
   CheckCircle2,
   Zap,
@@ -51,7 +52,15 @@ const howItWorksSteps = [
 export default function Home() {
   const [isSticky, setIsSticky] = useState(false);
   const { user, loading: userLoading } = useAuth();
+  const router = useRouter();
   const startScanHref = user && !userLoading ? '/dashboard' : '/scan';
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (!userLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, userLoading, router]);
 
   useEffect(() => {
     const handleScroll = () => {

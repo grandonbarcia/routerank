@@ -1,23 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function CallbackSuccessPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     let mounted = true;
     let redirectTimeout: NodeJS.Timeout;
+    let authSubscription: any;
 
     const handleCallback = async () => {
       try {
         console.log('Starting OAuth callback handling...');
-        const supabase = createClient();
 
-        // Listen for auth state change which will fire when session is ready
+        // First check if session already exists
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session && mounted) {
+          console.log('Session already exists! Redirecting to /scan...');
+          redirectTimeout = setTimeout(() => {
+            router.push('/scan');
+            router.refresh();
+          }, 100);
+          return;
+        }
+
+        // If no session yet, listen for auth state change
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
@@ -32,45 +47,33 @@ export default function CallbackSuccessPage() {
 
           if (event === 'SIGNED_IN' && session) {
             console.log('Sign in confirmed! Redirecting to /scan...');
-            // Redirect on next tick to ensure state is fully updated
             redirectTimeout = setTimeout(() => {
-              window.location.href = '/scan';
+              router.push('/scan');
+              router.refresh();
             }, 100);
           }
         });
 
-        // Fallback: also check if session already exists
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        authSubscription = subscription;
 
-        if (session && mounted) {
-          console.log('Session already exists! Redirecting to /scan...');
-          redirectTimeout = setTimeout(() => {
-            window.location.href = '/scan';
-          }, 100);
-        } else if (!session && mounted) {
-          // Set a timeout in case auth state change doesn't fire
+        // Set a timeout in case auth state change doesn't fire
+        if (!session && mounted) {
           redirectTimeout = setTimeout(() => {
             if (mounted) {
               console.error('Timeout waiting for session');
               setError('Authentication timeout');
               setTimeout(() => {
-                window.location.href = '/login';
+                router.push('/login');
               }, 2000);
             }
           }, 5000);
         }
-
-        return () => {
-          subscription.unsubscribe();
-        };
       } catch (err) {
         if (!mounted) return;
         console.error('Callback error:', err);
         setError('An unexpected error occurred');
         setTimeout(() => {
-          window.location.href = '/login';
+          router.push('/login');
         }, 2000);
       }
     };
@@ -80,7 +83,9 @@ export default function CallbackSuccessPage() {
     return () => {
       mounted = false;
       if (redirectTimeout) clearTimeout(redirectTimeout);
+      if (authSubscription) authSubscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

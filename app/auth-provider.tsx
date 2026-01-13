@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/database';
@@ -18,7 +18,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+
+  // Memoize supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -55,29 +57,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Initial load
-    refreshAuth();
+    let mounted = true;
 
-    // Listen for auth changes
+    // Listen for auth changes FIRST (before refreshAuth)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, !!session);
 
+      if (!mounted) return;
+
       if (session?.user) {
         setUser(session.user);
         const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
+        if (mounted) {
+          setProfile(profileData);
+          setLoading(false);
+        }
       } else {
-        setUser(null);
-        setProfile(null);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
 
+    // Then check for existing session
+    const initAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          const profileData = await fetchProfile(session.user.id);
+          if (mounted) {
+            setProfile(profileData);
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
