@@ -14,10 +14,10 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/app/auth-provider';
 
 export default function ScanPage() {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useAuth();
   const [guestReport, setGuestReport] = useState<{
     report: AuditReport;
     url: string;

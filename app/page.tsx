@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/app/auth-provider';
 import {
   CheckCircle2,
   Zap,
@@ -50,7 +50,7 @@ const howItWorksSteps = [
 
 export default function Home() {
   const [isSticky, setIsSticky] = useState(false);
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useAuth();
   const startScanHref = user && !userLoading ? '/dashboard' : '/scan';
 
   useEffect(() => {

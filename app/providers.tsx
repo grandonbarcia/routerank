@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { AuthProvider } from './auth-provider';
 
 type ThemeContextValue = {
   isDarkMode: boolean;
@@ -60,8 +61,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      {children}
-      <Toaster position="top-right" richColors />
+      <AuthProvider>
+        {children}
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
     </ThemeContext.Provider>
   );
 }

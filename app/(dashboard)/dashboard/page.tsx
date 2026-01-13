@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/app/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import {
   TrendingUp,
@@ -24,7 +24,7 @@ interface Scan {
 }
 
 export default function DashboardPage() {
-  const { user, profile, loading: userLoading } = useUser();
+  const { user, profile, loading: userLoading } = useAuth();
   const { error: showError } = useToast();
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);

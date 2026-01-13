@@ -6,20 +6,20 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const origin = requestUrl.origin;
 
-  // If we have a code, exchange it for a session
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-      console.error('OAuth callback error:', error);
-      return NextResponse.redirect(`${origin}/login?error=auth_failed`);
-    }
-
-    // Redirect to a success page (without code param) to avoid reprocessing
-    return NextResponse.redirect(`${origin}/auth/callback/success`);
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login`);
   }
 
-  // If no code, redirect to login
-  return NextResponse.redirect(`${origin}/login`);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error('OAuth callback error:', error);
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(error.message)}`
+    );
+  }
+
+  // Redirect to success page that handles client-side navigation
+  return NextResponse.redirect(`${origin}/auth/callback/success`);
 }

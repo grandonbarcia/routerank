@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Menu, Moon, Rocket, Sun, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/app/providers';
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/app/auth-provider';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -13,7 +13,7 @@ export function Header() {
   const [isSticky, setIsSticky] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { toggleDarkMode } = useTheme();
-  const { user, profile, loading } = useUser();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {

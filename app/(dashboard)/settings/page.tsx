@@ -1,13 +1,13 @@
 'use client';
 
-import { useUser } from '@/hooks/use-user';
+import { useAuth } from '@/app/auth-provider';
 import { Loader, LogOut, Copy, Check, LogIn, Settings } from 'lucide-react';
 import { signOut } from '@/lib/auth/actions';
 import { useState } from 'react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
-  const { user, profile, loading } = useUser();
+  const { user, profile, loading } = useAuth();
   const [copied, setCopied] = useState(false);
 
   const scansToday = profile?.scans_today || 0;
