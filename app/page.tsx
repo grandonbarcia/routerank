@@ -4,8 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/app/auth-provider';
-import { useRouter } from 'next/navigation';
 import {
   CheckCircle2,
   Zap,
@@ -27,40 +25,31 @@ const AnalyticsSection = dynamic(
 
 const howItWorksSteps = [
   {
-    title: 'Create your account',
-    description: 'Get access to your dashboard and scanning tools.',
-    body: 'Sign up in under a minute. Once you’re in, RouteRank unlocks the Dashboard, Scan, Settings, and History pages.',
-    imageSrc: '/window.svg',
-    imageAlt: 'Account setup illustration',
-  },
-  {
-    title: 'Scan a URL',
-    description: 'Paste a page and let RouteRank analyze it.',
-    body: 'Open Scan, paste a URL (a marketing page or a specific route), then run a scan. RouteRank checks SEO fundamentals, performance signals, and Next.js best practices.',
+    title: 'Enter a URL',
+    description: 'No signup required — just paste a link.',
+    body: 'Open the Scan page, paste the URL you want to audit (homepage or a specific route), and start the scan. RouteRank works instantly without accounts.',
     imageSrc: '/globe.svg',
-    imageAlt: 'URL scanning illustration',
+    imageAlt: 'URL input illustration',
   },
   {
-    title: 'Fix issues and track progress',
-    description: 'Turn findings into changes you can verify.',
-    body: 'Review the recommendations, fix what matters most, then rescan. Use History to compare results over time and confirm improvements.',
+    title: 'Review the report',
+    description: 'See scores, issues, and performance metrics.',
+    body: 'Get an overall score plus category breakdowns (SEO, Performance, Next.js), issue severity counts, and Core Web Vitals when available.',
     imageSrc: '/file.svg',
-    imageAlt: 'Report and improvements illustration',
+    imageAlt: 'Audit report illustration',
+  },
+  {
+    title: 'Fix and re-scan',
+    description: 'Apply recommendations and validate improvements.',
+    body: 'Start with critical and high severity issues, implement the suggested fixes, then run another scan to verify your score improved.',
+    imageSrc: '/window.svg',
+    imageAlt: 'Improvements illustration',
   },
 ];
 
 export default function Home() {
   const [isSticky, setIsSticky] = useState(false);
-  const { user, loading: userLoading } = useAuth();
-  const router = useRouter();
-  const startScanHref = user && !userLoading ? '/dashboard' : '/scan';
-
-  // Redirect logged-in users to dashboard
-  useEffect(() => {
-    if (!userLoading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, userLoading, router]);
+  const startScanHref = '/scan';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -350,8 +339,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              We&apos;ve streamlined the process of optimizing your Next.js site
-              from start to finish.
+              No accounts. No setup. Run an audit and get actionable fixes.
             </p>
           </div>
 
@@ -582,7 +570,7 @@ export default function Home() {
       {/* Sticky CTA Button */}
       {isSticky && (
         <Link
-          href="/signup"
+          href="/scan"
           className="fixed bottom-8 right-8 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg dark:shadow-blue-500/50 transition-all duration-200 animate-in fade-in slide-in-from-bottom-4"
         >
           Get Started

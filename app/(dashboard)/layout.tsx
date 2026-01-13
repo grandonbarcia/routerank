@@ -41,26 +41,6 @@ export default function DashboardLayout({
                 >
                   New Scan
                 </Link>
-                <Link
-                  href="/history"
-                  className={`block rounded-md px-4 py-2 font-medium ${
-                    isActive('/history')
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  History
-                </Link>
-                <Link
-                  href="/settings"
-                  className={`block rounded-md px-4 py-2 font-medium ${
-                    isActive('/settings')
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
-                  }`}
-                >
-                  Settings
-                </Link>
               </nav>
             </aside>
 

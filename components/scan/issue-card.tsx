@@ -26,11 +26,13 @@ export function IssueCard({ issue, onCopyCode }: IssueCardProps) {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'error':
+      case 'critical':
         return 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200';
-      case 'warning':
+      case 'high':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200';
+      case 'medium':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-200';
-      case 'info':
+      case 'low':
       default:
         return 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200';
     }
@@ -38,11 +40,13 @@ export function IssueCard({ issue, onCopyCode }: IssueCardProps) {
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'error':
+      case 'critical':
         return '🔴';
-      case 'warning':
+      case 'high':
+        return '🟠';
+      case 'medium':
         return '🟡';
-      case 'info':
+      case 'low':
       default:
         return '🔵';
     }

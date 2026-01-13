@@ -1,18 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { executeAudit, executeQuickAudit } from '@/lib/audit/execute';
 import { z } from 'zod';
+import { executeAudit, executeQuickAudit } from '@/lib/audit/execute';
+import { createHmac } from 'crypto';
 
-// Validation schema
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const DAILY_SCAN_LIMIT = 5;
+const LIMIT_COOKIE_NAME = 'rr_daily_scan';
+
+type DailyLimitPayload = {
+  d: string; // YYYY-MM-DD (UTC)
+  c: number; // count
+};
+
+function getUtcDayKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getUtcResetIso(date: Date): string {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1)
+  ).toISOString();
+}
+
+function encodeBase64Url(input: string): string {
+  return Buffer.from(input, 'utf8').toString('base64url');
+}
+
+function decodeBase64Url(input: string): string {
+  return Buffer.from(input, 'base64url').toString('utf8');
+}
+
+function signPayload(payloadB64: string, secret: string): string {
+  return createHmac('sha256', secret).update(payloadB64).digest('base64url');
+}
+
+function parseDailyLimitCookie(params: {
+  cookieValue: string | undefined;
+  todayKey: string;
+  secret: string | undefined;
+}): DailyLimitPayload {
+  const { cookieValue, todayKey, secret } = params;
+  if (!cookieValue) return { d: todayKey, c: 0 };
+
+  try {
+    const [payloadB64, sig] = cookieValue.split('.', 2);
+    if (!payloadB64) return { d: todayKey, c: 0 };
+
+    if (secret) {
+      if (!sig) return { d: todayKey, c: 0 };
+      const expected = signPayload(payloadB64, secret);
+      if (sig !== expected) return { d: todayKey, c: 0 };
+    }
+
+    const raw = decodeBase64Url(payloadB64);
+    const parsed = JSON.parse(raw) as Partial<DailyLimitPayload>;
+    const day = typeof parsed.d === 'string' ? parsed.d : todayKey;
+    const count =
+      typeof parsed.c === 'number' && Number.isFinite(parsed.c) ? parsed.c : 0;
+
+    if (day !== todayKey) return { d: todayKey, c: 0 };
+    return { d: day, c: Math.max(0, Math.floor(count)) };
+  } catch {
+    return { d: todayKey, c: 0 };
+  }
+}
+
+function buildDailyLimitCookieValue(
+  payload: DailyLimitPayload,
+  secret: string | undefined
+): string {
+  const payloadB64 = encodeBase64Url(JSON.stringify(payload));
+  if (!secret) return payloadB64;
+  const sig = signPayload(payloadB64, secret);
+  return `${payloadB64}.${sig}`;
+}
+
+function applyRateLimitToResponse(params: {
+  response: NextResponse;
+  remaining: number;
+  resetIso: string;
+  cookieValue: string;
+}): NextResponse {
+  const { response, remaining, resetIso, cookieValue } = params;
+
+  response.headers.set('X-RateLimit-Limit', String(DAILY_SCAN_LIMIT));
+  response.headers.set('X-RateLimit-Remaining', String(Math.max(0, remaining)));
+  response.headers.set('X-RateLimit-Reset', resetIso);
+
+  response.cookies.set(LIMIT_COOKIE_NAME, cookieValue, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    // Keep a bit longer than 24h so it survives timezone/clock differences.
+    maxAge: 60 * 60 * 24 * 2,
+  });
+
+  return response;
+}
+
 const createScanSchema = z.object({
   url: z
     .string()
     .min(1, 'URL is required')
     .transform((val) => {
-      // Add https:// if no protocol
       if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        return 'https://' + val;
+        return `https://${val}`;
       }
       return val;
     })
@@ -22,313 +117,96 @@ const createScanSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
     const body = await request.json();
     const validation = createScanSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request: ' + validation.error.issues[0].message },
-        { status: 400 }
+        { error: `Invalid request: ${validation.error.issues[0].message}` },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
     const { url, fullAudit } = validation.data;
 
-    // Get authenticated user (optional: guests are allowed)
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Daily scan limit (per browser via cookie; optionally signed with RATE_LIMIT_SECRET).
+    const now = new Date();
+    const todayKey = getUtcDayKey(now);
+    const resetIso = getUtcResetIso(now);
+    const secret = process.env.RATE_LIMIT_SECRET;
+    const current = parseDailyLimitCookie({
+      cookieValue: request.cookies.get(LIMIT_COOKIE_NAME)?.value,
+      todayKey,
+      secret,
+    });
 
-    if (authError) {
-      console.error('[API] Auth error:', authError);
-      return NextResponse.json(
-        { error: 'Authentication error' },
-        { status: 500 }
-      );
-    }
-
-    // Guest flow: run audit immediately and return the report (not persisted)
-    if (!user) {
-      const auditResult = fullAudit
-        ? await executeAudit({ url, userId: 'guest' })
-        : await executeQuickAudit({ url, userId: 'guest' });
-
-      if (!auditResult.success || !auditResult.report) {
-        return NextResponse.json(
-          { error: auditResult.error || 'Failed to run audit' },
-          { status: 400, headers: { 'Cache-Control': 'no-store' } }
-        );
-      }
-
-      return NextResponse.json(
+    if (current.c >= DAILY_SCAN_LIMIT) {
+      const blockedPayload: DailyLimitPayload = { d: todayKey, c: current.c };
+      const res = NextResponse.json(
         {
-          status: 'completed',
-          url: auditResult.url || url,
-          report: auditResult.report,
-          guest: true,
+          error: `Daily scan limit reached (${DAILY_SCAN_LIMIT}/day). Try again after reset.`,
+          limit: DAILY_SCAN_LIMIT,
+          remaining: 0,
+          resetAt: resetIso,
         },
-        { status: 200, headers: { 'Cache-Control': 'no-store' } }
+        { status: 429, headers: { 'Cache-Control': 'no-store' } }
       );
+      return applyRateLimitToResponse({
+        response: res,
+        remaining: 0,
+        resetIso,
+        cookieValue: buildDailyLimitCookieValue(blockedPayload, secret),
+      });
     }
 
-    // Check user's plan and scan quota
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('subscription_tier, scans_today, last_scan_date')
-      .eq('id', user.id)
-      .single();
+    const nextCount = current.c + 1;
+    const remaining = DAILY_SCAN_LIMIT - nextCount;
+    const nextPayload: DailyLimitPayload = { d: todayKey, c: nextCount };
+    const nextCookieValue = buildDailyLimitCookieValue(nextPayload, secret);
 
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
+    // Auth removed: always run immediately and return report (not persisted).
+    const auditResult = fullAudit
+      ? await executeAudit({ url, userId: 'guest' })
+      : await executeQuickAudit({ url, userId: 'guest' });
+
+    if (!auditResult.success || !auditResult.report) {
+      const res = NextResponse.json(
+        { error: auditResult.error || 'Failed to run audit' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
       );
+      return applyRateLimitToResponse({
+        response: res,
+        remaining,
+        resetIso,
+        cookieValue: nextCookieValue,
+      });
     }
 
-    // Check daily scan limits based on tier
-    const limits = {
-      free: Infinity, // No limit
-      pro: Infinity, // No limit
-      agency: Infinity, // No limit
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-    const lastScanDate = profile.last_scan_date
-      ? new Date(profile.last_scan_date).toISOString().split('T')[0]
-      : null;
-
-    // Reset daily count if it's a new day
-    const scansToday = lastScanDate === today ? profile.scans_today : 0;
-
-    const limit = limits[profile.subscription_tier as keyof typeof limits];
-    if (scansToday >= limit) {
-      return NextResponse.json(
-        {
-          error: `Daily scan limit reached (${limit} scans/day for ${profile.subscription_tier} plan). Try again tomorrow.`,
-          scansToday,
-          limit,
-        },
-        { status: 429 }
-      );
-    }
-
-    // Create scan record
-    const urlObj = new URL(url);
-    const domain = urlObj.hostname;
-
-    const { data: scan, error: scanError } = await supabase
-      .from('scans')
-      .insert({
-        user_id: user.id,
-        url,
-        domain,
-        status: 'pending',
-        seo_score: null,
-        performance_score: null,
-        nextjs_score: null,
-      })
-      .select()
-      .single();
-
-    if (scanError) {
-      console.error('[API] Failed to create scan:', scanError);
-      return NextResponse.json(
-        {
-          error: 'Failed to create scan',
-          ...(process.env.NODE_ENV !== 'production'
-            ? { detail: scanError.message, code: scanError.code }
-            : null),
-        },
-        { status: 500 }
-      );
-    }
-
-    // Start audit in background (don't wait for it)
-    // In production, this should be a background job (e.g., Redis queue)
-    runAuditInBackground(scan.id, url, user.id, fullAudit).catch((err) =>
-      console.error('[Background Job] Error:', err)
-    );
-
-    return NextResponse.json(
+    const res = NextResponse.json(
       {
-        scanId: scan.id,
-        status: 'pending',
-        url,
-        message: 'Scan started. Check back shortly for results.',
+        status: 'completed',
+        url: auditResult.url || url,
+        report: auditResult.report,
+        guest: true,
+        limit: {
+          daily: DAILY_SCAN_LIMIT,
+          remaining,
+          resetAt: resetIso,
+        },
       },
-      { status: 202 } // Accepted - processing in background
+      { status: 200, headers: { 'Cache-Control': 'no-store' } }
     );
+    return applyRateLimitToResponse({
+      response: res,
+      remaining,
+      resetIso,
+      cookieValue: nextCookieValue,
+    });
   } catch (error) {
-    console.error('[API] Scan creation error:', error);
+    console.error('[API] Scan error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
-  }
-}
-
-/**
- * Runs audit in background and updates database
- * In production, this should be a proper job queue (Bull, RQ, etc.)
- */
-async function runAuditInBackground(
-  scanId: string,
-  url: string,
-  userId: string,
-  fullAudit: boolean
-) {
-  try {
-    const supabase = createAdminClient();
-
-    // Mark scan as running
-    {
-      const { error } = await supabase
-        .from('scans')
-        .update({ status: 'running' })
-        .eq('id', scanId);
-      if (error) {
-        console.error('[Background Job] Failed to mark scan running:', error);
-      }
-    }
-
-    // Run the appropriate audit
-    const auditResult = fullAudit
-      ? await executeAudit({ url, userId, scanId })
-      : await executeQuickAudit({ url, userId, scanId });
-
-    if (!auditResult.success) {
-      // Update scan with error
-      {
-        const { error } = await supabase
-          .from('scans')
-          .update({
-            status: 'failed',
-            error_message: auditResult.error || 'Unknown error',
-          })
-          .eq('id', scanId);
-
-        if (error) {
-          console.error('[Background Job] Failed to mark scan failed:', error);
-        }
-      }
-
-      console.error(
-        `[Background Job] Audit ${scanId} failed:`,
-        auditResult.error
-      );
-      return;
-    }
-
-    const report = auditResult.report!;
-
-    // Update scan with results
-    {
-      const { error } = await supabase
-        .from('scans')
-        .update({
-          status: 'completed',
-          seo_score: report.scores.seo,
-          performance_score: report.scores.performance,
-          nextjs_score: report.scores.nextjs,
-          // Store the full audit metadata (SEO/performance/Next.js)
-          // so the results page can render detailed metrics.
-          lighthouse_data: report.metadata || null,
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', scanId);
-
-      if (error) {
-        console.error('[Background Job] Failed to mark scan completed:', error);
-      }
-    }
-
-    // Insert issues into audit_issues table
-    const mapSeverityForDb = (
-      severity: string
-    ): 'error' | 'warning' | 'info' => {
-      // DB constraint: severity IN ('info', 'warning', 'error')
-      // Audit engine emits: 'critical' | 'high' | 'medium' | 'low'
-      switch (severity) {
-        case 'critical':
-        case 'high':
-        case 'error':
-          return 'error';
-        case 'medium':
-        case 'warning':
-          return 'warning';
-        case 'low':
-        case 'info':
-        default:
-          return 'info';
-      }
-    };
-
-    const issues = report.issues.map((issue) => ({
-      scan_id: scanId,
-      category: issue.category,
-      severity: mapSeverityForDb(issue.severity),
-      rule_id: issue.rule,
-      title: issue.message,
-      message: issue.suggestion || '',
-      fix_suggestion: issue.suggestion,
-      metadata: { original_severity: issue.severity },
-    }));
-
-    if (issues.length > 0) {
-      const { error } = await supabase.from('audit_issues').insert(issues);
-      if (error) {
-        console.error('[Background Job] Failed to insert issues:', error);
-      }
-    }
-
-    // Update user's daily scan count and last_scan_date
-    const today = new Date().toISOString().split('T')[0];
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('scans_today, last_scan_date')
-      .eq('id', userId)
-      .single();
-
-    if (profile) {
-      const lastScanDate = profile.last_scan_date
-        ? new Date(profile.last_scan_date).toISOString().split('T')[0]
-        : null;
-
-      const newScansToday =
-        lastScanDate === today ? profile.scans_today + 1 : 1;
-
-      await supabase
-        .from('profiles')
-        .update({
-          scans_today: newScansToday,
-          last_scan_date: new Date().toISOString(),
-        })
-        .eq('id', userId);
-    }
-
-    console.log(`[Background Job] Audit ${scanId} completed successfully`);
-  } catch (error) {
-    console.error('[Background Job] Audit failed:', error);
-
-    // Try to update scan status as failed
-    try {
-      const supabase = createAdminClient();
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Internal server error during audit';
-      await supabase
-        .from('scans')
-        .update({
-          status: 'failed',
-          error_message: message,
-        })
-        .eq('id', scanId);
-    } catch {
-      // Silently fail
-    }
   }
 }
