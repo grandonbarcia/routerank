@@ -2,14 +2,24 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const origin = requestUrl.origin;
 
+  // If we have a code, exchange it for a session
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error('OAuth callback error:', error);
+      return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+    }
+
+    // Redirect to a success page (without code param) to avoid reprocessing
+    return NextResponse.redirect(`${origin}/auth/callback/success`);
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/scan', request.url));
+  // If no code, redirect to login
+  return NextResponse.redirect(`${origin}/login`);
 }
