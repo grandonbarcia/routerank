@@ -30,6 +30,7 @@ const scanFormSchema = z.object({
       }
     }, 'Please enter a valid public URL (localhost is not supported)'),
   fullAudit: z.boolean().default(true),
+  deepTechDetect: z.boolean().default(false),
 });
 
 type ScanFormInputs = z.input<typeof scanFormSchema>;
@@ -53,10 +54,12 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
     defaultValues: {
       url: '',
       fullAudit: true,
+      deepTechDetect: false,
     },
   });
 
   const fullAudit = watch('fullAudit');
+  const deepTechDetect = watch('deepTechDetect');
 
   const onSubmit = async (values: ScanFormInputs) => {
     setLoading(true);
@@ -74,6 +77,7 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
         body: JSON.stringify({
           url: normalizedUrl,
           fullAudit: data.fullAudit,
+          deepTechDetect: data.deepTechDetect,
         }),
       });
 
@@ -185,6 +189,30 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
                     {fullAudit
                       ? 'Includes Lighthouse analysis (takes ~2-3 minutes)'
                       : 'Quick SEO and Next.js checks only (~30 seconds)'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Deep Tech Detect */}
+              <div className="flex items-center gap-3 rounded-md bg-gray-50 dark:bg-gray-950/20 p-4">
+                <input
+                  type="checkbox"
+                  id="deepTechDetect"
+                  disabled={isSubmitting}
+                  {...register('deepTechDetect')}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <label
+                    htmlFor="deepTechDetect"
+                    className="text-sm font-medium text-gray-900 dark:text-gray-100 block"
+                  >
+                    Deep tech detection (renders the site)
+                  </label>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {deepTechDetect
+                      ? 'Uses a headless browser to detect frameworks on client-rendered sites (slower).'
+                      : 'Fast detection based on initial HTML + headers.'}
                   </p>
                 </div>
               </div>

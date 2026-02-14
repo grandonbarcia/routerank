@@ -19,6 +19,22 @@ interface PerformanceResult {
   };
 }
 
+type LighthouseAudit = {
+  numericValue?: number;
+  score?: number;
+  title?: string;
+  description?: string;
+};
+
+type LighthousePsiReport = {
+  audits: Record<string, LighthouseAudit>;
+  categories?: {
+    performance?: {
+      score?: number;
+    };
+  };
+};
+
 /**
  * Returns a default performance result when Lighthouse fails
  */
@@ -51,7 +67,7 @@ function getDefaultPerformanceResult(error: string): PerformanceResult {
  * For development without a PageSpeed Insights API key, we return placeholder data
  */
 export async function analyzePerformance(
-  url: string
+  url: string,
 ): Promise<PerformanceResult> {
   try {
     // Try to use PageSpeed Insights API if available
@@ -61,11 +77,11 @@ export async function analyzePerformance(
       process.env.PAGESPEED_API_KEY;
     if (!apiKey) {
       console.warn(
-        '[Performance Audit] PageSpeed Insights API key not configured'
+        '[Performance Audit] PageSpeed Insights API key not configured',
       );
       // Return a placeholder result during development
       return getDefaultPerformanceResult(
-        'PageSpeed Insights API key not configured'
+        'PageSpeed Insights API key not configured',
       );
     }
 
@@ -83,29 +99,31 @@ export async function analyzePerformance(
       new Promise<Response>((_, reject) =>
         setTimeout(
           () => reject(new Error('PageSpeed Insights API timeout')),
-          30000
-        )
+          30000,
+        ),
       ),
     ]);
 
     if (!response.ok) {
       console.warn(
         '[Performance Audit] PageSpeed Insights API failed:',
-        response.status
+        response.status,
       );
       return getDefaultPerformanceResult(
-        'PageSpeed Insights API returned an error'
+        'PageSpeed Insights API returned an error',
       );
     }
 
     const data = (await response.json()) as {
       lighthouseResult?: unknown;
     };
-    const lighthouseReport = data.lighthouseResult as any;
+    const lighthouseReport = data.lighthouseResult as
+      | LighthousePsiReport
+      | undefined;
 
     if (!lighthouseReport) {
       return getDefaultPerformanceResult(
-        'Failed to get Lighthouse report from PageSpeed Insights'
+        'Failed to get Lighthouse report from PageSpeed Insights',
       );
     }
 
@@ -207,7 +225,8 @@ export async function analyzePerformance(
 
     // Calculate score
     const performanceScore =
-      (lighthouseReport.categories.performance?.score || 0.5) * 100;
+      ((lighthouseReport.categories?.performance?.score ?? 0.5) as number) *
+      100;
 
     return {
       score: Math.round(performanceScore),

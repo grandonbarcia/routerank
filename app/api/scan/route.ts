@@ -20,7 +20,7 @@ function getUtcDayKey(date: Date): string {
 
 function getUtcResetIso(date: Date): string {
   return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1)
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1),
   ).toISOString();
 }
 
@@ -69,7 +69,7 @@ function parseDailyLimitCookie(params: {
 
 function buildDailyLimitCookieValue(
   payload: DailyLimitPayload,
-  secret: string | undefined
+  secret: string | undefined,
 ): string {
   const payloadB64 = encodeBase64Url(JSON.stringify(payload));
   if (!secret) return payloadB64;
@@ -113,6 +113,7 @@ const createScanSchema = z.object({
     })
     .pipe(z.string().url('Invalid URL')),
   fullAudit: z.boolean().optional().default(true),
+  deepTechDetect: z.boolean().optional().default(false),
 });
 
 export async function POST(request: NextRequest) {
@@ -123,11 +124,11 @@ export async function POST(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         { error: `Invalid request: ${validation.error.issues[0].message}` },
-        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
-    const { url, fullAudit } = validation.data;
+    const { url, fullAudit, deepTechDetect } = validation.data;
 
     // Daily scan limit (per browser via cookie; optionally signed with RATE_LIMIT_SECRET).
     const now = new Date();
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
           remaining: 0,
           resetAt: resetIso,
         },
-        { status: 429, headers: { 'Cache-Control': 'no-store' } }
+        { status: 429, headers: { 'Cache-Control': 'no-store' } },
       );
       return applyRateLimitToResponse({
         response: res,
@@ -166,13 +167,13 @@ export async function POST(request: NextRequest) {
 
     // Auth removed: always run immediately and return report (not persisted).
     const auditResult = fullAudit
-      ? await executeAudit({ url, userId: 'guest' })
-      : await executeQuickAudit({ url, userId: 'guest' });
+      ? await executeAudit({ url, userId: 'guest', deepTechDetect })
+      : await executeQuickAudit({ url, userId: 'guest', deepTechDetect });
 
     if (!auditResult.success || !auditResult.report) {
       const res = NextResponse.json(
         { error: auditResult.error || 'Failed to run audit' },
-        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
       );
       return applyRateLimitToResponse({
         response: res,
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
           resetAt: resetIso,
         },
       },
-      { status: 200, headers: { 'Cache-Control': 'no-store' } }
+      { status: 200, headers: { 'Cache-Control': 'no-store' } },
     );
     return applyRateLimitToResponse({
       response: res,
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
     console.error('[API] Scan error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 }

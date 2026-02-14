@@ -4,6 +4,8 @@ import { fetchHtml } from './fetcher';
 import { analyzeSeo } from './seo';
 import { analyzeNextjs } from './nextjs';
 import { analyzePerformance } from './performance';
+import { analyzeTechStack } from './tech';
+import { fetchRenderedHtml } from './rendered';
 import { createAuditReport } from './scoring';
 import type { AuditIssue, AuditResult } from './scoring';
 
@@ -11,6 +13,7 @@ export interface ExecuteAuditParams {
   url: string;
   userId: string;
   scanId?: string;
+  deepTechDetect?: boolean;
 }
 
 export interface ExecuteAuditResult {
@@ -26,6 +29,7 @@ export type AuditReport = AuditResult & {
     seo: unknown;
     performance?: unknown;
     nextjs: unknown;
+    tech?: unknown;
   };
   checkedAt: string;
   userId: string;
@@ -37,10 +41,10 @@ export type AuditReport = AuditResult & {
  * Orchestrates HTML fetching, analysis, and scoring
  */
 export async function executeAudit(
-  params: ExecuteAuditParams
+  params: ExecuteAuditParams,
 ): Promise<ExecuteAuditResult> {
   try {
-    const { url, userId } = params;
+    const { url, userId, deepTechDetect } = params;
 
     // Step 1: Fetch HTML
     console.log(`[Audit] Starting audit for ${url}`);
@@ -62,19 +66,36 @@ export async function executeAudit(
     console.log(`[Audit] Running SEO analysis`);
     const seoResult = analyzeSeo(html, normalizedUrl);
     console.log(
-      `[Audit] SEO score: ${seoResult.score}/100 (${seoResult.issues.length} issues)`
+      `[Audit] SEO score: ${seoResult.score}/100 (${seoResult.issues.length} issues)`,
     );
 
     // Step 3: Run Next.js analysis
     console.log(`[Audit] Running Next.js analysis`);
     const nextjsResult = analyzeNextjs(html);
     console.log(
-      `[Audit] Next.js score: ${nextjsResult.score}/100 (${nextjsResult.issues.length} issues)`
+      `[Audit] Next.js score: ${nextjsResult.score}/100 (${nextjsResult.issues.length} issues)`,
     );
+
+    const nextjsApplicable = nextjsResult.checks.detected === true;
+
+    let techHtml = html;
+    if (deepTechDetect) {
+      const rendered = await fetchRenderedHtml(normalizedUrl);
+      if (rendered.success && rendered.html) {
+        techHtml = rendered.html;
+      }
+    }
+
+    const techResult = analyzeTechStack({
+      html: techHtml,
+      url: normalizedUrl,
+      headers: fetchResult.headers,
+      nextjsDetected: nextjsApplicable,
+    });
 
     // Step 4: Run performance analysis
     console.log(
-      `[Audit] Running performance analysis (this may take 1-2 minutes)`
+      `[Audit] Running performance analysis (this may take 1-2 minutes)`,
     );
     let performanceResult: {
       score: number;
@@ -115,11 +136,12 @@ export async function executeAudit(
       seoResult.score,
       performanceResult.score,
       nextjsResult.score,
-      allIssues
+      allIssues,
+      { nextjsApplicable },
     );
 
     console.log(
-      `[Audit] Audit complete: ${report.scores.overall}/100 (Grade: ${report.scores.grade})`
+      `[Audit] Audit complete: ${report.scores.overall}/100 (Grade: ${report.scores.grade})`,
     );
 
     return {
@@ -132,6 +154,7 @@ export async function executeAudit(
           seo: seoResult.metadata,
           performance: performanceResult.metrics,
           nextjs: nextjsResult.checks,
+          tech: techResult,
         },
         checkedAt: new Date().toISOString(),
         userId,
@@ -152,7 +175,7 @@ export async function executeAudit(
  * Faster for immediate feedback
  */
 export async function executeQuickAudit(
-  params: ExecuteAuditParams
+  params: ExecuteAuditParams,
 ): Promise<ExecuteAuditResult> {
   try {
     const { url } = params;
@@ -172,6 +195,23 @@ export async function executeQuickAudit(
 
     const seoResult = analyzeSeo(html, normalizedUrl);
     const nextjsResult = analyzeNextjs(html);
+
+    const nextjsApplicable = nextjsResult.checks.detected === true;
+
+    let techHtml = html;
+    if (params.deepTechDetect) {
+      const rendered = await fetchRenderedHtml(normalizedUrl);
+      if (rendered.success && rendered.html) {
+        techHtml = rendered.html;
+      }
+    }
+
+    const techResult = analyzeTechStack({
+      html: techHtml,
+      url: normalizedUrl,
+      headers: fetchResult.headers,
+      nextjsDetected: nextjsApplicable,
+    });
 
     // Use placeholder performance result
     const performanceResult: {
@@ -201,7 +241,8 @@ export async function executeQuickAudit(
       seoResult.score,
       performanceResult.score,
       nextjsResult.score,
-      allIssues
+      allIssues,
+      { nextjsApplicable },
     );
 
     console.log(`[Quick Audit] Complete: ${report.scores.overall}/100`);
@@ -216,6 +257,7 @@ export async function executeQuickAudit(
         metadata: {
           seo: seoResult.metadata,
           nextjs: nextjsResult.checks,
+          tech: techResult,
         },
         checkedAt: new Date().toISOString(),
         userId: params.userId,

@@ -32,6 +32,7 @@ type SeoMetadata = {
 };
 
 type NextjsChecks = {
+  detected?: boolean;
   usesNextImage?: boolean;
   usesNextFont?: boolean;
   usesMetadataApi?: boolean;
@@ -42,6 +43,7 @@ type AuditMetadata = {
   seo?: SeoMetadata;
   performance?: PerformanceMetrics;
   nextjs?: NextjsChecks;
+  tech?: unknown;
 };
 
 type Suggestion = {
@@ -70,7 +72,8 @@ function parseAuditMetadata(lighthouseData: unknown): AuditMetadata {
   if (
     'seo' in lighthouseData ||
     'performance' in lighthouseData ||
-    'nextjs' in lighthouseData
+    'nextjs' in lighthouseData ||
+    'tech' in lighthouseData
   ) {
     return {
       seo: isRecord(lighthouseData.seo)
@@ -82,6 +85,7 @@ function parseAuditMetadata(lighthouseData: unknown): AuditMetadata {
       nextjs: isRecord(lighthouseData.nextjs)
         ? (lighthouseData.nextjs as NextjsChecks)
         : undefined,
+      tech: lighthouseData.tech,
     };
   }
 
@@ -201,31 +205,33 @@ function getScoreSuggestions(params: {
     });
   }
 
-  if (nextjs?.usesNextImage === false) {
-    suggestions.push({
-      category: 'nextjs',
-      title: 'Use next/image for images',
-      detail:
-        'Switch `<img>` to `next/image` to get automatic sizing, optimization, and better LCP potential.',
-    });
-  }
+  if (nextjs?.detected === true) {
+    if (nextjs.usesNextImage === false) {
+      suggestions.push({
+        category: 'nextjs',
+        title: 'Use next/image for images',
+        detail:
+          'Switch `<img>` to `next/image` to get automatic sizing, optimization, and better LCP potential.',
+      });
+    }
 
-  if (nextjs?.usesNextFont === false) {
-    suggestions.push({
-      category: 'nextjs',
-      title: 'Use next/font for fonts',
-      detail:
-        'Move font loading to `next/font` to avoid layout shifts and improve loading behavior.',
-    });
-  }
+    if (nextjs.usesNextFont === false) {
+      suggestions.push({
+        category: 'nextjs',
+        title: 'Use next/font for fonts',
+        detail:
+          'Move font loading to `next/font` to avoid layout shifts and improve loading behavior.',
+      });
+    }
 
-  if (nextjs?.usesMetadataApi === false) {
-    suggestions.push({
-      category: 'nextjs',
-      title: 'Adopt the Metadata API',
-      detail:
-        'Use `generateMetadata` / `metadata` for consistent SEO tags across routes in Next.js 13+.',
-    });
+    if (nextjs.usesMetadataApi === false) {
+      suggestions.push({
+        category: 'nextjs',
+        title: 'Adopt the Metadata API',
+        detail:
+          'Use `generateMetadata` / `metadata` for consistent SEO tags across routes in Next.js 13+.',
+      });
+    }
   }
 
   return suggestions.slice(0, limit);
@@ -262,7 +268,7 @@ function getTopImprovements<
     category: 'seo' | 'performance' | 'nextjs';
     severity: IssueSeverity;
     rule_id?: string | null;
-  }
+  },
 >(issues: T[], limit: number): T[] {
   const seenRules = new Set<string>();
   const ranked = [...issues]
@@ -317,8 +323,8 @@ export default function ScanResultPage() {
     typeof params.id === 'string'
       ? params.id
       : Array.isArray(params.id)
-      ? params.id[0]
-      : '';
+        ? params.id[0]
+        : '';
 
   const [data, setData] = useState<ScanData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -408,7 +414,7 @@ export default function ScanResultPage() {
 
   const jumpToIssue = (
     issueId: string,
-    category: 'seo' | 'performance' | 'nextjs'
+    category: 'seo' | 'performance' | 'nextjs',
   ) => {
     setSelectedTab(category);
     setTimeout(() => {
@@ -469,12 +475,19 @@ export default function ScanResultPage() {
   const performance = auditMetadata.performance;
   const seo = auditMetadata.seo;
   const nextjs = auditMetadata.nextjs;
+  const nextjsDetected = nextjs?.detected === true;
 
-  const severityCounts = issues.reduce((acc, issue) => {
-    const key = issue.severity;
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {} as Partial<Record<IssueSeverity, number>>);
+  const activeTab =
+    nextjsDetected || selectedTab !== 'nextjs' ? selectedTab : 'seo';
+
+  const severityCounts = issues.reduce(
+    (acc, issue) => {
+      const key = issue.severity;
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    {} as Partial<Record<IssueSeverity, number>>,
+  );
 
   const topImprovements = getTopImprovements(issues, 5);
   const metricSuggestions = getScoreSuggestions({
@@ -573,7 +586,7 @@ export default function ScanResultPage() {
               </p>
               <p
                 className={`text-5xl font-bold ${getScoreColor(
-                  scan.overallScore
+                  scan.overallScore,
                 )}`}
               >
                 {Math.round(scan.overallScore)}
@@ -622,7 +635,9 @@ export default function ScanResultPage() {
       {scan.seoScore !== null &&
         scan.performanceScore !== null &&
         scan.nextjsScore !== null && (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div
+            className={`grid gap-4 ${nextjsDetected ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+          >
             {[
               { label: 'SEO', score: scan.seoScore, key: 'seo' as const },
               {
@@ -630,17 +645,21 @@ export default function ScanResultPage() {
                 score: scan.performanceScore,
                 key: 'performance' as const,
               },
-              {
-                label: 'Next.js',
-                score: scan.nextjsScore,
-                key: 'nextjs' as const,
-              },
+              ...(nextjsDetected
+                ? [
+                    {
+                      label: 'Next.js',
+                      score: scan.nextjsScore,
+                      key: 'nextjs' as const,
+                    },
+                  ]
+                : []),
             ].map((cat) => (
               <button
                 key={cat.key}
                 onClick={() => setSelectedTab(cat.key)}
                 className={`rounded-lg border p-6 text-left transition ${
-                  selectedTab === cat.key
+                  activeTab === cat.key
                     ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30'
                     : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'
                 }`}
@@ -650,7 +669,7 @@ export default function ScanResultPage() {
                 </p>
                 <p
                   className={`mt-2 text-3xl font-bold ${getScoreColor(
-                    cat.score
+                    cat.score,
                   )}`}
                 >
                   {Math.round(cat.score)}
@@ -822,7 +841,7 @@ export default function ScanResultPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${getSeverityColor(
-                          issue.severity
+                          issue.severity,
                         )}`}
                       >
                         {issue.severity.toUpperCase()}
@@ -896,16 +915,19 @@ export default function ScanResultPage() {
 
           {/* Category Tabs */}
           <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
-            {(['seo', 'performance', 'nextjs'] as const).map((category) => {
+            {(nextjsDetected
+              ? (['seo', 'performance', 'nextjs'] as const)
+              : (['seo', 'performance'] as const)
+            ).map((category) => {
               const count = issues.filter(
-                (i) => i.category === category
+                (i) => i.category === category,
               ).length;
               return (
                 <button
                   key={category}
                   onClick={() => setSelectedTab(category)}
                   className={`px-4 py-2 font-medium transition border-b-2 ${
-                    selectedTab === category
+                    activeTab === category
                       ? 'border-blue-600 text-blue-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
                   }`}
@@ -922,7 +944,7 @@ export default function ScanResultPage() {
           {/* Issues List */}
           <div className="space-y-3">
             {issues
-              .filter((i) => i.category === selectedTab)
+              .filter((i) => i.category === activeTab)
               .map((issue) => (
                 <div
                   key={issue.id}
@@ -932,7 +954,7 @@ export default function ScanResultPage() {
                   <div className="flex items-start gap-3">
                     <span
                       className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${getSeverityColor(
-                        issue.severity
+                        issue.severity,
                       )}`}
                     >
                       {issue.severity.toUpperCase()}

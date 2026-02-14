@@ -1,20 +1,6 @@
 'use server';
 
-import { z } from 'zod';
-
-// List of private IP ranges to block (SSRF protection)
-const PRIVATE_IP_RANGES = [
-  /^127\./, // Loopback
-  /^10\./, // Private class A
-  /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // Private class B
-  /^192\.168\./, // Private class C
-  /^169\.254\./, // Link-local
-  /^fc[0-9a-f]{2}:/i, // IPv6 private
-  /^fe80:/i, // IPv6 link-local
-  /^::1$/, // IPv6 loopback
-];
-
-const PRIVATE_HOSTNAMES = ['localhost', '.local', '.internal'];
+import { isPrivateUrl, validateAndNormalizeHttpUrl } from './url-safety';
 
 interface FetcherResult {
   success: boolean;
@@ -26,68 +12,13 @@ interface FetcherResult {
 }
 
 /**
- * Validates if a URL is safe to fetch (SSRF protection)
- */
-function isPrivateUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname || '';
-
-    // Check against private IP ranges
-    if (PRIVATE_IP_RANGES.some((pattern) => pattern.test(hostname))) {
-      return true;
-    }
-
-    // Check against private hostnames
-    if (PRIVATE_HOSTNAMES.some((host) => hostname.includes(host))) {
-      return true;
-    }
-
-    return false;
-  } catch {
-    return true; // Invalid URL - block it
-  }
-}
-
-/**
- * Validates and normalizes a URL
- */
-function validateUrl(url: string): {
-  valid: boolean;
-  url?: string;
-  error?: string;
-} {
-  try {
-    // Add protocol if missing
-    let normalizedUrl = url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      normalizedUrl = 'https://' + url;
-    }
-
-    const parsed = new URL(normalizedUrl);
-
-    // Only allow http and https
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      return {
-        valid: false,
-        error: 'Only HTTP and HTTPS protocols are supported',
-      };
-    }
-
-    return { valid: true, url: parsed.toString() };
-  } catch {
-    return { valid: false, error: 'Invalid URL format' };
-  }
-}
-
-/**
  * Fetches HTML from a URL with SSRF protection and timeout
  * Returns HTML content, status code, and response headers
  */
 export async function fetchHtml(url: string): Promise<FetcherResult> {
   try {
     // Validate URL format
-    const validation = validateUrl(url);
+    const validation = validateAndNormalizeHttpUrl(url);
     if (!validation.valid) {
       return { success: false, error: validation.error };
     }
@@ -159,6 +90,17 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
         'cache-control',
         'server',
         'x-powered-by',
+        'x-generator',
+        'x-vercel-id',
+        'x-nextjs-cache',
+        'x-nf-request-id',
+        'cf-ray',
+        'cf-cache-status',
+        'via',
+        'x-served-by',
+        'x-drupal-cache',
+        'x-shopify-stage',
+        'x-wix-request-id',
       ];
       headerNames.forEach((name) => {
         const value = response.headers.get(name);

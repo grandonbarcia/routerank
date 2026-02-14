@@ -16,6 +16,16 @@ type PerformanceMetrics = {
   speedIndex?: number;
 };
 
+type TechTag = {
+  name: string;
+  category?: string;
+  confidence?: string;
+};
+
+type TechStackResult = {
+  tags?: TechTag[];
+};
+
 export default function ScanPage() {
   const [guestReport, setGuestReport] = useState<{
     report: AuditReport;
@@ -61,6 +71,16 @@ export default function ScanPage() {
   const performanceMetrics = (report.metadata?.performance ??
     {}) as PerformanceMetrics;
 
+  const tech = (report.metadata?.tech ?? {}) as TechStackResult;
+  const techTags = Array.isArray(tech.tags) ? tech.tags : [];
+
+  const nextjsDetected =
+    (report.metadata?.nextjs as { detected?: boolean } | undefined)
+      ?.detected === true;
+
+  const activeTab =
+    nextjsDetected || selectedTab !== 'nextjs' ? selectedTab : 'seo';
+
   const formatMs = (ms?: number) =>
     typeof ms === 'number' && Number.isFinite(ms)
       ? `${(ms / 1000).toFixed(1)}s`
@@ -74,7 +94,7 @@ export default function ScanPage() {
     nextjs: report.issues.filter((i) => i.category === 'nextjs'),
   };
 
-  const currentIssues = issuesByCategory[selectedTab];
+  const currentIssues = issuesByCategory[activeTab];
 
   const mapIssueToData = (issue: (typeof report.issues)[0]): IssueData => ({
     id: issue.rule,
@@ -97,6 +117,33 @@ export default function ScanPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             Scanned: <span className="font-mono text-sm">{url}</span>
           </p>
+
+          <div className="mt-3">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Tech stack (detected)
+            </p>
+            {techTags.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {techTags.map((tag) => (
+                  <span
+                    key={`${tag.name}-${tag.category ?? 'other'}`}
+                    className="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-1 text-xs text-gray-700 dark:text-gray-300"
+                    title={
+                      tag.category
+                        ? `${tag.name} • ${tag.category}${tag.confidence ? ` • ${tag.confidence}` : ''}`
+                        : tag.name
+                    }
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Not detected
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <MDExport mode="report" report={report} url={url} />
@@ -110,7 +157,9 @@ export default function ScanPage() {
       </div>
 
       {/* Score Cards */}
-      <div className="grid gap-6 sm:grid-cols-3">
+      <div
+        className={`grid gap-6 ${nextjsDetected ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+      >
         <ScoreCard
           label="SEO"
           score={report.scores.seo}
@@ -123,12 +172,14 @@ export default function ScanPage() {
           icon={<Zap className="h-8 w-8 text-orange-500" />}
           category="performance"
         />
-        <ScoreCard
-          label="Next.js"
-          score={report.scores.nextjs}
-          icon={<Code2 className="h-8 w-8 text-purple-600" />}
-          category="nextjs"
-        />
+        {nextjsDetected && (
+          <ScoreCard
+            label="Next.js"
+            score={report.scores.nextjs}
+            icon={<Code2 className="h-8 w-8 text-purple-600" />}
+            category="nextjs"
+          />
+        )}
       </div>
 
       {/* Overall Summary */}
@@ -220,14 +271,16 @@ export default function ScanPage() {
                   {issuesByCategory.performance.length}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Next.js
-                </span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {issuesByCategory.nextjs.length}
-                </span>
-              </div>
+              {nextjsDetected && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Next.js
+                  </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {issuesByCategory.nextjs.length}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -298,7 +351,7 @@ export default function ScanPage() {
             <button
               onClick={() => setSelectedTab('seo')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                selectedTab === 'seo'
+                activeTab === 'seo'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
@@ -308,23 +361,25 @@ export default function ScanPage() {
             <button
               onClick={() => setSelectedTab('performance')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                selectedTab === 'performance'
+                activeTab === 'performance'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               Performance Issues ({issuesByCategory.performance.length})
             </button>
-            <button
-              onClick={() => setSelectedTab('nextjs')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                selectedTab === 'nextjs'
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Next.js Issues ({issuesByCategory.nextjs.length})
-            </button>
+            {nextjsDetected && (
+              <button
+                onClick={() => setSelectedTab('nextjs')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                  activeTab === 'nextjs'
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Next.js Issues ({issuesByCategory.nextjs.length})
+              </button>
+            )}
           </nav>
         </div>
 
@@ -334,7 +389,7 @@ export default function ScanPage() {
             <div className="text-center py-12 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
               <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">
-                No {selectedTab} issues found! Great job! 🎉
+                No {activeTab} issues found! Great job! 🎉
               </p>
             </div>
           ) : (

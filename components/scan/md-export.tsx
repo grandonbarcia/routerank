@@ -13,6 +13,21 @@ type PerformanceMetrics = {
   speedIndex?: number;
 };
 
+type TechTag = {
+  name: string;
+  category?: string;
+  confidence?: string;
+};
+
+type TechStackResult = {
+  tags?: TechTag[];
+  signals?: {
+    generator?: string;
+    server?: string;
+    poweredBy?: string;
+  };
+};
+
 type MDExportProps =
   | {
       mode: 'report';
@@ -50,6 +65,8 @@ function formatNumber(value?: number, digits: number = 3): string {
 function buildMarkdownReport(report: AuditReport, url: string): string {
   const lines: string[] = [];
   const perf = (report.metadata?.performance ?? {}) as PerformanceMetrics;
+  const tech = (report.metadata?.tech ?? {}) as TechStackResult;
+  const techTags = Array.isArray(tech.tags) ? tech.tags : [];
 
   lines.push(`# RouteRank Audit Report`);
   lines.push('');
@@ -63,7 +80,7 @@ function buildMarkdownReport(report: AuditReport, url: string): string {
   lines.push(
     `- **Overall:** ${Math.round(report.scores.overall)}/100 (${
       report.scores.grade
-    })`
+    })`,
   );
   lines.push(`- **SEO:** ${Math.round(report.scores.seo)}/100`);
   lines.push(`- **Performance:** ${Math.round(report.scores.performance)}/100`);
@@ -83,6 +100,33 @@ function buildMarkdownReport(report: AuditReport, url: string): string {
   lines.push(`- **Speed Index:** ${formatMsToSeconds(perf.speedIndex)}`);
   lines.push('');
 
+  lines.push('## Tech Stack (Detected)');
+  lines.push('');
+  if (techTags.length === 0) {
+    lines.push('- Not detected');
+  } else {
+    for (const tag of techTags) {
+      const category = tag.category ? ` (${tag.category})` : '';
+      lines.push(`- ${tag.name}${category}`);
+    }
+  }
+  lines.push('');
+  if (
+    tech.signals?.server ||
+    tech.signals?.poweredBy ||
+    tech.signals?.generator
+  ) {
+    lines.push('### Signals');
+    lines.push('');
+    if (tech.signals?.server)
+      lines.push(`- **Server:** ${tech.signals.server}`);
+    if (tech.signals?.poweredBy)
+      lines.push(`- **X-Powered-By:** ${tech.signals.poweredBy}`);
+    if (tech.signals?.generator)
+      lines.push(`- **Generator:** ${tech.signals.generator}`);
+    lines.push('');
+  }
+
   lines.push(`## Issues (${report.issues.length})`);
   lines.push('');
 
@@ -90,7 +134,7 @@ function buildMarkdownReport(report: AuditReport, url: string): string {
     lines.push(
       `### ${issue.category.toUpperCase()} • ${issue.severity.toUpperCase()} • ${
         issue.rule
-      }`
+      }`,
     );
     lines.push('');
     lines.push(`**${issue.message}**`);
@@ -120,14 +164,14 @@ export function MDExport(props: MDExportProps) {
         if (!filename) {
           const now = new Date();
           const stamp = `${now.getFullYear()}-${String(
-            now.getMonth() + 1
+            now.getMonth() + 1,
           ).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
           filename = `audit-report-${safeFilenamePart(props.url)}-${stamp}.md`;
         }
       } else {
         // Back-compat path (older saved scans). Note: server export may be disabled.
         const response = await fetch(
-          `/api/scans/${props.scanId}/export?format=md`
+          `/api/scans/${props.scanId}/export?format=md`,
         );
         if (!response.ok) {
           const body = (await response.json().catch(() => null)) as {

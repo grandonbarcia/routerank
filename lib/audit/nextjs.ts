@@ -12,11 +12,24 @@ interface NextjsResult {
   score: number; // 0-100
   issues: NextjsIssue[];
   checks: {
-    usesNextImage: boolean;
-    usesNextFont: boolean;
-    usesMetadataApi: boolean;
-    hasServerComponents: boolean;
+    detected: boolean;
+    usesNextImage?: boolean;
+    usesNextFont?: boolean;
+    usesMetadataApi?: boolean;
+    hasServerComponents?: boolean;
   };
+}
+
+function detectNextjs(html: string, $: cheerio.CheerioAPI): boolean {
+  // Heuristics that are strongly correlated with Next.js output.
+  // We avoid network requests and rely only on the fetched HTML.
+  if (html.includes('/_next/')) return true;
+  if (html.includes('__NEXT_DATA__')) return true;
+  if (html.includes('data-nscript')) return true;
+  if ($('#__next').length > 0) return true;
+  if ($('meta[name="next-head-count"]').length > 0) return true;
+  if ($('[id="next-route-announcer"]').length > 0) return true;
+  return false;
 }
 
 /**
@@ -27,12 +40,33 @@ export function analyzeNextjs(html: string): NextjsResult {
   const issues: NextjsIssue[] = [];
   let score = 100;
 
-  const checks = {
-    usesNextImage: false,
-    usesNextFont: false,
-    usesMetadataApi: false,
-    hasServerComponents: false,
+  const checks: NextjsResult['checks'] = {
+    detected: false,
+    usesNextImage: undefined,
+    usesNextFont: undefined,
+    usesMetadataApi: undefined,
+    hasServerComponents: undefined,
   };
+
+  const detected = detectNextjs(html, $);
+  if (!detected) {
+    // Not a Next.js site (or we can't confidently detect it). Treat as N/A:
+    // - Do not add Next.js-specific issues
+    // - Do not penalize score
+    return {
+      score: 100,
+      issues: [],
+      checks: {
+        detected: false,
+      },
+    };
+  }
+
+  checks.detected = true;
+  checks.usesNextImage = false;
+  checks.usesNextFont = false;
+  checks.usesMetadataApi = false;
+  checks.hasServerComponents = false;
 
   // Check for next/image usage (looking for next-image data attributes)
   // In real Next.js apps, next/image creates img tags with data-nimg="fill" or similar
@@ -125,7 +159,7 @@ export function analyzeNextjs(html: string): NextjsResult {
   // Only consider *external* scripts with a src attribute.
   // Ignore Next.js internal scripts and module scripts (module scripts are deferred by default).
   const scripts = $(
-    'script[src]:not([async]):not([defer]):not([type="module"])'
+    'script[src]:not([async]):not([defer]):not([type="module"])',
   ).filter((_, el) => {
     const src = $(el).attr('src')?.trim() || '';
     if (!src) return false;
@@ -153,7 +187,7 @@ export function analyzeNextjs(html: string): NextjsResult {
 
   // Check for third-party scripts
   const thirdPartyScripts = $(
-    'script[src*="google"], script[src*="facebook"], script[src*="analytics"]'
+    'script[src*="google"], script[src*="facebook"], script[src*="analytics"]',
   ).length;
   if (thirdPartyScripts > 0) {
     issues.push({
@@ -199,29 +233,33 @@ export function analyzeNextjs(html: string): NextjsResult {
  * Provides recommendations for improving Next.js usage
  */
 export function getNextjsRecommendations(
-  checks: NextjsResult['checks']
+  checks: NextjsResult['checks'],
 ): string[] {
   const recommendations: string[] = [];
 
-  if (!checks.usesNextImage) {
+  if (checks.detected !== true) {
+    return ['Next.js checks not applicable for this site.'];
+  }
+
+  if (checks.usesNextImage === false) {
     recommendations.push(
-      'Migrate image tags to next/image for better performance'
+      'Migrate image tags to next/image for better performance',
     );
   }
 
-  if (!checks.usesNextFont) {
+  if (checks.usesNextFont === false) {
     recommendations.push('Use next/font for optimized font loading');
   }
 
-  if (!checks.usesMetadataApi) {
+  if (checks.usesMetadataApi === false) {
     recommendations.push(
-      'Use Metadata API (generateMetadata) for dynamic meta tags in Next.js 13+'
+      'Use Metadata API (generateMetadata) for dynamic meta tags in Next.js 13+',
     );
   }
 
   if (recommendations.length === 0) {
     recommendations.push(
-      'Great job! You are following Next.js best practices.'
+      'Great job! You are following Next.js best practices.',
     );
   }
 

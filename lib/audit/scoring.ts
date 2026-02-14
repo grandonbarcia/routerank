@@ -49,12 +49,26 @@ export function calculateAuditScore(scores: {
   seo: number;
   performance: number;
   nextjs: number;
+  nextjsApplicable?: boolean;
 }): AuditScores {
-  // Weighted average
-  const overall =
-    scores.seo * CATEGORY_WEIGHTS.seo +
-    scores.performance * CATEGORY_WEIGHTS.performance +
-    scores.nextjs * CATEGORY_WEIGHTS.nextjs;
+  const nextjsApplicable = scores.nextjsApplicable !== false;
+
+  // Weighted average (renormalize if Next.js is not applicable)
+  const weights = nextjsApplicable
+    ? CATEGORY_WEIGHTS
+    : {
+        seo: CATEGORY_WEIGHTS.seo,
+        performance: CATEGORY_WEIGHTS.performance,
+        nextjs: 0,
+      };
+
+  const weightSum = weights.seo + weights.performance + weights.nextjs;
+  const overallRaw =
+    scores.seo * weights.seo +
+    scores.performance * weights.performance +
+    scores.nextjs * weights.nextjs;
+
+  const overall = weightSum > 0 ? overallRaw / weightSum : 0;
 
   const roundedOverall = Math.round(overall);
 
@@ -84,9 +98,11 @@ export function getGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'E' | 'F' {
  */
 export function generateSummary(
   scores: AuditScores,
-  totalIssues: number
+  totalIssues: number,
+  options?: { nextjsApplicable?: boolean },
 ): string {
   const { overall, grade, seo, performance, nextjs } = scores;
+  const nextjsApplicable = options?.nextjsApplicable !== false;
 
   let summary = `Overall Score: ${overall}/100 (Grade: ${grade}). `;
 
@@ -99,8 +115,10 @@ export function generateSummary(
   if (performance >= 80) strengths.push('Performance');
   else if (performance < 60) weaknesses.push('Performance');
 
-  if (nextjs >= 80) strengths.push('Next.js practices');
-  else if (nextjs < 60) weaknesses.push('Next.js practices');
+  if (nextjsApplicable) {
+    if (nextjs >= 80) strengths.push('Next.js practices');
+    else if (nextjs < 60) weaknesses.push('Next.js practices');
+  }
 
   if (strengths.length > 0) {
     summary += `Strengths: ${strengths.join(', ')}. `;
@@ -120,7 +138,7 @@ export function generateSummary(
  */
 export function prioritizeIssues(
   issues: AuditIssue[],
-  limit?: number
+  limit?: number,
 ): AuditIssue[] {
   // Sort by severity (critical first) and category
   const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -143,12 +161,16 @@ export function createAuditReport(
   seoScore: number,
   performanceScore: number,
   nextjsScore: number,
-  issues: AuditIssue[]
+  issues: AuditIssue[],
+  options?: { nextjsApplicable?: boolean },
 ): AuditResult {
+  const nextjsApplicable = options?.nextjsApplicable !== false;
+
   const scores = calculateAuditScore({
     seo: seoScore,
     performance: performanceScore,
     nextjs: nextjsScore,
+    nextjsApplicable,
   });
 
   const criticalIssues = issues.filter((i) => i.severity === 'critical').length;
@@ -158,7 +180,7 @@ export function createAuditReport(
     issues: prioritizeIssues(issues),
     totalIssues: issues.length,
     criticalIssues,
-    summary: generateSummary(scores, issues.length),
+    summary: generateSummary(scores, issues.length, { nextjsApplicable }),
   };
 }
 
@@ -167,7 +189,7 @@ export function createAuditReport(
  */
 export function getTopRecommendations(
   issues: AuditIssue[],
-  limit: number = 5
+  limit: number = 5,
 ): AuditIssue[] {
   return prioritizeIssues(issues, limit);
 }
