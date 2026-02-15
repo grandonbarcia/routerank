@@ -25,6 +25,7 @@ interface SeoResult {
  * Analyzes HTML for SEO issues
  */
 export function analyzeSeo(html: string, baseUrl: string): SeoResult {
+  void baseUrl;
   const $ = cheerio.load(html);
   const issues: SeoIssue[] = [];
   let score = 100;

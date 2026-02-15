@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
@@ -47,8 +47,8 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
-    watch,
   } = useForm<ScanFormInputs>({
     resolver: zodResolver(scanFormSchema),
     defaultValues: {
@@ -58,8 +58,8 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
     },
   });
 
-  const fullAudit = watch('fullAudit');
-  const deepTechDetect = watch('deepTechDetect');
+  const fullAudit = useWatch({ control, name: 'fullAudit' });
+  const deepTechDetect = useWatch({ control, name: 'deepTechDetect' });
 
   const onSubmit = async (values: ScanFormInputs) => {
     setLoading(true);
@@ -92,7 +92,12 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
 
       // Guest scan (immediate report returned)
       if (result.guest && result.report) {
-        showSuccess('Scan complete!');
+        const remaining = result?.rateLimit?.daily?.remaining;
+        const remainingText =
+          typeof remaining === 'number'
+            ? ` (${Math.max(0, remaining)} scans left today)`
+            : '';
+        showSuccess(`Scan complete!${remainingText}`);
         setLoading(false);
         if (onGuestScanComplete) {
           onGuestScanComplete(result.report, result.url || normalizedUrl);
@@ -100,12 +105,11 @@ export function ScanForm({ onGuestScanComplete }: ScanFormProps = {}) {
         return;
       }
 
-      // Authenticated scan (background processing with scanId)
+      // Background scan mode is currently disabled (no accounts).
+      // Keep a fallback in case the API reintroduces scanId.
       if (result.scanId) {
-        showSuccess(`Scan started! Analyzing your site...`);
-        setTimeout(() => {
-          router.push(`/scan/${result.scanId}`);
-        }, 500);
+        showSuccess('Scan started. Redirecting…');
+        setTimeout(() => router.push(`/scan/${result.scanId}`), 500);
         return;
       }
 

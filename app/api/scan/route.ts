@@ -2,12 +2,54 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { executeAudit, executeQuickAudit } from '@/lib/audit/execute';
 import { createHmac } from 'crypto';
+import { validatePublicHttpUrl } from '@/lib/audit/url-safety';
+import { checkScanRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const DAILY_SCAN_LIMIT = 5;
 const LIMIT_COOKIE_NAME = 'rr_daily_scan';
+
+const MAX_CONCURRENT_AUDITS = Math.max(
+  1,
+  Number.parseInt(process.env.MAX_CONCURRENT_AUDITS || '2', 10) || 2,
+);
+
+type SemaphoreState = {
+  inFlight: number;
+  queue: Array<() => void>;
+};
+
+const SEMAPHORE_KEY = Symbol.for('routerank.auditSemaphore');
+
+function getSemaphoreState(): SemaphoreState {
+  const g = globalThis as unknown as Record<string | symbol, unknown>;
+  const existing = g[SEMAPHORE_KEY] as SemaphoreState | undefined;
+  if (existing) return existing;
+  const created: SemaphoreState = { inFlight: 0, queue: [] };
+  g[SEMAPHORE_KEY] = created;
+  return created;
+}
+
+async function runWithAuditSlot<T>(fn: () => Promise<T>): Promise<T> {
+  const sem = getSemaphoreState();
+
+  if (sem.inFlight >= MAX_CONCURRENT_AUDITS) {
+    await new Promise<void>((resolve) => {
+      sem.queue.push(resolve);
+    });
+  }
+
+  sem.inFlight += 1;
+  try {
+    return await fn();
+  } finally {
+    sem.inFlight = Math.max(0, sem.inFlight - 1);
+    const next = sem.queue.shift();
+    if (next) next();
+  }
+}
 
 type DailyLimitPayload = {
   d: string; // YYYY-MM-DD (UTC)
@@ -118,6 +160,33 @@ const createScanSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Server-side abuse protection (IP-based). This cannot be bypassed by clearing cookies.
+    const rl = await checkScanRateLimit(request);
+    if (!rl.allowed) {
+      const res = NextResponse.json(
+        {
+          error: rl.reason || 'Too many requests',
+          limit: rl.limit,
+          remaining: rl.remaining,
+          resetAt: new Date(rl.resetAt).toISOString(),
+          provider: rl.provider,
+        },
+        {
+          status: 429,
+          headers: {
+            'Cache-Control': 'no-store',
+            'Retry-After': rl.retryAfterSeconds
+              ? String(rl.retryAfterSeconds)
+              : '60',
+            'X-RateLimit-Limit': String(rl.limit),
+            'X-RateLimit-Remaining': String(rl.remaining),
+            'X-RateLimit-Reset': String(Math.floor(rl.resetAt / 1000)),
+          },
+        },
+      );
+      return res;
+    }
+
     const body = await request.json();
     const validation = createScanSchema.safeParse(body);
 
@@ -129,6 +198,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { url, fullAudit, deepTechDetect } = validation.data;
+
+    // Server-side URL safety validation (format + SSRF protections)
+    const safeUrl = await validatePublicHttpUrl(url);
+    if (!safeUrl.valid || !safeUrl.url) {
+      return NextResponse.json(
+        { error: safeUrl.error || 'Invalid or unsafe URL' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+
+    const normalizedUrl = safeUrl.url;
 
     // Daily scan limit (per browser via cookie; optionally signed with RATE_LIMIT_SECRET).
     const now = new Date();
@@ -166,9 +246,15 @@ export async function POST(request: NextRequest) {
     const nextCookieValue = buildDailyLimitCookieValue(nextPayload, secret);
 
     // Auth removed: always run immediately and return report (not persisted).
-    const auditResult = fullAudit
-      ? await executeAudit({ url, userId: 'guest', deepTechDetect })
-      : await executeQuickAudit({ url, userId: 'guest', deepTechDetect });
+    const auditResult = await runWithAuditSlot(async () =>
+      fullAudit
+        ? executeAudit({ url: normalizedUrl, userId: 'guest', deepTechDetect })
+        : executeQuickAudit({
+            url: normalizedUrl,
+            userId: 'guest',
+            deepTechDetect,
+          }),
+    );
 
     if (!auditResult.success || !auditResult.report) {
       const res = NextResponse.json(
@@ -186,9 +272,17 @@ export async function POST(request: NextRequest) {
     const res = NextResponse.json(
       {
         status: 'completed',
-        url: auditResult.url || url,
+        url: auditResult.url || normalizedUrl,
         report: auditResult.report,
         guest: true,
+        rateLimit: {
+          provider: rl.provider,
+          daily: {
+            limit: rl.limit,
+            remaining: rl.remaining,
+            resetAt: new Date(rl.resetAt).toISOString(),
+          },
+        },
         limit: {
           daily: DAILY_SCAN_LIMIT,
           remaining,

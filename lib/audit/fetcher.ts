@@ -1,6 +1,6 @@
 'use server';
 
-import { isPrivateUrl, validateAndNormalizeHttpUrl } from './url-safety';
+import { validatePublicHttpUrl } from './url-safety';
 
 interface FetcherResult {
   success: boolean;
@@ -17,21 +17,12 @@ interface FetcherResult {
  */
 export async function fetchHtml(url: string): Promise<FetcherResult> {
   try {
-    // Validate URL format
-    const validation = validateAndNormalizeHttpUrl(url);
-    if (!validation.valid) {
+    // Validate URL + SSRF protections (format, protocol, private hostnames, DNS-to-private)
+    const validation = await validatePublicHttpUrl(url);
+    if (!validation.valid || !validation.url)
       return { success: false, error: validation.error };
-    }
 
-    const normalizedUrl = validation.url!;
-
-    // Check for private URLs (SSRF protection)
-    if (isPrivateUrl(normalizedUrl)) {
-      return {
-        success: false,
-        error: 'Cannot access private or local addresses',
-      };
-    }
+    const normalizedUrl = validation.url;
 
     // Fetch with timeout and reasonable limits
     const controller = new AbortController();
@@ -49,6 +40,18 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
         },
         redirect: 'follow',
       });
+
+      // Re-validate final URL after redirects (prevents redirecting to private ranges)
+      const finalUrl = response.url || normalizedUrl;
+      if (finalUrl !== normalizedUrl) {
+        const redirectValidation = await validatePublicHttpUrl(finalUrl);
+        if (!redirectValidation.valid) {
+          return {
+            success: false,
+            error: 'Redirected to an unsafe address',
+          };
+        }
+      }
 
       clearTimeout(timeoutId);
 
@@ -110,7 +113,7 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
       return {
         success: true,
         html,
-        url: normalizedUrl,
+        url: finalUrl,
         statusCode: response.status,
         headers,
       };
@@ -129,7 +132,7 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
 
       return { success: false, error: 'Unknown network error' };
     }
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Failed to fetch HTML' };
   }
 }

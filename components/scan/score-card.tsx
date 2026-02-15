@@ -6,10 +6,9 @@ interface ScoreCardProps {
   label: string;
   score: number | null;
   icon: ReactNode;
-  category: 'seo' | 'performance' | 'nextjs';
 }
 
-export function ScoreCard({ label, score, icon, category }: ScoreCardProps) {
+export function ScoreCard({ label, score, icon }: ScoreCardProps) {
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-gray-400';
     if (score >= 90) return 'text-green-600 dark:text-green-400';
@@ -17,15 +16,6 @@ export function ScoreCard({ label, score, icon, category }: ScoreCardProps) {
     if (score >= 70) return 'text-yellow-600 dark:text-yellow-400';
     if (score >= 60) return 'text-orange-600 dark:text-orange-400';
     return 'text-red-600 dark:text-red-400';
-  };
-
-  const getScoreBgColor = (score: number | null) => {
-    if (score === null) return 'bg-gray-100 dark:bg-gray-800';
-    if (score >= 90) return 'bg-green-100 dark:bg-green-950/40';
-    if (score >= 80) return 'bg-blue-100 dark:bg-blue-950/40';
-    if (score >= 70) return 'bg-yellow-100 dark:bg-yellow-950/40';
-    if (score >= 60) return 'bg-orange-100 dark:bg-orange-950/40';
-    return 'bg-red-100 dark:bg-red-950/40';
   };
 
   const getScoreGrade = (score: number | null) => {

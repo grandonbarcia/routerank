@@ -1,6 +1,6 @@
 import puppeteer, { type Browser } from 'puppeteer';
 
-import { isPrivateUrl } from './url-safety';
+import { isPrivateUrl, validatePublicHttpUrl } from './url-safety';
 
 export interface RenderedHtmlResult {
   success: boolean;
@@ -12,15 +12,12 @@ export interface RenderedHtmlResult {
 export async function fetchRenderedHtml(
   url: string,
 ): Promise<RenderedHtmlResult> {
-  const normalized = url;
-
-  // Basic pre-check
-  if (isPrivateUrl(normalized)) {
-    return {
-      success: false,
-      error: 'Cannot access private or local addresses',
-    };
+  const validation = await validatePublicHttpUrl(url);
+  if (!validation.valid || !validation.url) {
+    return { success: false, error: validation.error };
   }
+
+  const normalized = validation.url;
 
   let browser: Browser | null = null;
 
@@ -63,10 +60,18 @@ export async function fetchRenderedHtml(
     });
 
     const finalUrl = page.url();
+    // Sync hostname/IP string check first, then DNS-backed validation.
     if (isPrivateUrl(finalUrl)) {
       return {
         success: false,
         error: 'Navigation redirected to a private address',
+      };
+    }
+    const finalValidation = await validatePublicHttpUrl(finalUrl);
+    if (!finalValidation.valid) {
+      return {
+        success: false,
+        error: 'Navigation redirected to an unsafe address',
       };
     }
 

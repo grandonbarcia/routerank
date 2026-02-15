@@ -10,6 +10,7 @@ interface ShareExportProps {
 }
 
 export function ShareExport({ scanId, url }: ShareExportProps) {
+  void url;
   const [sharing, setSharing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Auth removed: no session refresh / route gating.
 export function proxy(_request: NextRequest) {
+  void _request;
   return NextResponse.next();
 }
 

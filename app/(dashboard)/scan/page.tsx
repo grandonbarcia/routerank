@@ -6,7 +6,7 @@ import { IssueCard, type IssueData } from '@/components/scan/issue-card';
 import { MDExport } from '@/components/scan/md-export';
 import type { AuditReport } from '@/lib/audit/execute';
 import { useState } from 'react';
-import { Search, Code2, Zap, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Code2, Zap, CheckCircle2 } from 'lucide-react';
 
 type PerformanceMetrics = {
   lcpMs?: number;
@@ -164,20 +164,17 @@ export default function ScanPage() {
           label="SEO"
           score={report.scores.seo}
           icon={<Search className="h-8 w-8 text-blue-600" />}
-          category="seo"
         />
         <ScoreCard
           label="Performance"
           score={report.scores.performance}
           icon={<Zap className="h-8 w-8 text-orange-500" />}
-          category="performance"
         />
         {nextjsDetected && (
           <ScoreCard
             label="Next.js"
             score={report.scores.nextjs}
             icon={<Code2 className="h-8 w-8 text-purple-600" />}
-            category="nextjs"
           />
         )}
       </div>
