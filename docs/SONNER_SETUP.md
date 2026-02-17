@@ -257,18 +257,9 @@ Returns an object with the following methods:
 
 ## Migration from shadcn/ui toast
 
-If you were using the old shadcn/ui toast:
+RouteRank no longer uses shadcn/ui's toast.
 
-**Old (Deprecated):**
-
-```typescript
-import { useToast } from '@/components/ui/use-toast';
-
-const { toast } = useToast();
-toast({ title: 'Success!', description: '...' });
-```
-
-**New (Sonner):**
+**Use the app hook (Sonner):**
 
 ```typescript
 import { useToast } from '@/hooks/use-toast';

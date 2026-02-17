@@ -136,7 +136,7 @@ POST   /api/webhook/stripe          - Stripe webhooks
 
 ## 🛠️ Tech Stack Summary
 
-**Frontend:** Next.js 16, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion
+**Frontend:** Next.js 16, TypeScript, Tailwind CSS, Framer Motion
 **Backend:** Node.js, Supabase PostgreSQL, Stripe
 **Hosting:** Vercel
 **Auth:** Supabase Auth
@@ -179,7 +179,6 @@ POST   /api/webhook/stripe          - Stripe webhooks
 ## 🎯 Next Actions
 
 1. **Get Stripe Account** - https://stripe.com
-
    - Create products for Pro and Agency
    - Get live API keys
    - Configure webhook
@@ -193,7 +192,6 @@ POST   /api/webhook/stripe          - Stripe webhooks
    ```
 
 3. **Deploy** - Push to Vercel
-
    - Add environment variables
    - Configure webhook
    - Test production flow

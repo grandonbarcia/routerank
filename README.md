@@ -130,14 +130,12 @@ The core orchestrator is:
 It runs three analyzers and combines their findings:
 
 - **SEO checks (HTML-based)**: `lib/audit/seo.ts`
-
   - Title/meta description/canonical/viewport
   - OpenGraph/Twitter tags
   - Heading structure (H1)
   - Image alt text checks
 
 - **Next.js best-practices checks (HTML heuristics)**: `lib/audit/nextjs.ts`
-
   - next/image usage detection
   - Font loading hints (next/font vs external)
   - Blocking scripts / third-party scripts
@@ -221,7 +219,6 @@ export const metadata: Metadata = {
 
 - Next.js (App Router)
 - Tailwind CSS
-- shadcn/ui
 - Recharts
 
 **Backend**

@@ -64,7 +64,7 @@ export async function executeAudit(
 
     // Step 2: Run SEO analysis
     console.log(`[Audit] Running SEO analysis`);
-    const seoResult = analyzeSeo(html, normalizedUrl);
+    const seoResult = analyzeSeo(html, normalizedUrl, fetchResult.headers);
     console.log(
       `[Audit] SEO score: ${seoResult.score}/100 (${seoResult.issues.length} issues)`,
     );
@@ -79,10 +79,18 @@ export async function executeAudit(
     const nextjsApplicable = nextjsResult.checks.detected === true;
 
     let techHtml = html;
+    let techRequests: string[] | undefined;
+    let techJsSignals: Record<string, unknown> | undefined;
+    let techDeepHeaders: Record<string, string> | undefined;
+    let techCookieNames: string[] | undefined;
     if (deepTechDetect) {
       const rendered = await fetchRenderedHtml(normalizedUrl);
       if (rendered.success && rendered.html) {
         techHtml = rendered.html;
+        techRequests = rendered.requests;
+        techJsSignals = rendered.jsSignals;
+        techDeepHeaders = rendered.mainResponseHeaders;
+        techCookieNames = rendered.cookieNames;
       }
     }
 
@@ -91,7 +99,35 @@ export async function executeAudit(
       url: normalizedUrl,
       headers: fetchResult.headers,
       nextjsDetected: nextjsApplicable,
+      networkRequests: techRequests,
+      jsSignals: techJsSignals,
+      deepHeaders: techDeepHeaders,
+      cookieNames: techCookieNames,
     });
+
+    // Auto fallback: some modern SPAs (e.g. Twitch) ship minimal HTML and only
+    // expose fingerprints after client-side hydration. If the simple pass
+    // produces no tags, retry with rendered HTML once.
+    let finalTechResult = techResult;
+    if (!deepTechDetect && techResult.tags.length === 0) {
+      try {
+        const rendered = await fetchRenderedHtml(normalizedUrl);
+        if (rendered.success && rendered.html) {
+          finalTechResult = analyzeTechStack({
+            html: rendered.html,
+            url: rendered.finalUrl ?? normalizedUrl,
+            headers: fetchResult.headers,
+            nextjsDetected: nextjsApplicable,
+            networkRequests: rendered.requests,
+            jsSignals: rendered.jsSignals,
+            deepHeaders: rendered.mainResponseHeaders,
+            cookieNames: rendered.cookieNames,
+          });
+        }
+      } catch {
+        // ignore fallback failures
+      }
+    }
 
     // Step 4: Run performance analysis
     console.log(
@@ -154,7 +190,7 @@ export async function executeAudit(
           seo: seoResult.metadata,
           performance: performanceResult.metrics,
           nextjs: nextjsResult.checks,
-          tech: techResult,
+          tech: finalTechResult,
         },
         checkedAt: new Date().toISOString(),
         userId,
@@ -193,16 +229,24 @@ export async function executeQuickAudit(
     const html = fetchResult.html!;
     const normalizedUrl = fetchResult.url!;
 
-    const seoResult = analyzeSeo(html, normalizedUrl);
+    const seoResult = analyzeSeo(html, normalizedUrl, fetchResult.headers);
     const nextjsResult = analyzeNextjs(html);
 
     const nextjsApplicable = nextjsResult.checks.detected === true;
 
     let techHtml = html;
+    let techRequests: string[] | undefined;
+    let techJsSignals: Record<string, unknown> | undefined;
+    let techDeepHeaders: Record<string, string> | undefined;
+    let techCookieNames: string[] | undefined;
     if (params.deepTechDetect) {
       const rendered = await fetchRenderedHtml(normalizedUrl);
       if (rendered.success && rendered.html) {
         techHtml = rendered.html;
+        techRequests = rendered.requests;
+        techJsSignals = rendered.jsSignals;
+        techDeepHeaders = rendered.mainResponseHeaders;
+        techCookieNames = rendered.cookieNames;
       }
     }
 
@@ -211,7 +255,33 @@ export async function executeQuickAudit(
       url: normalizedUrl,
       headers: fetchResult.headers,
       nextjsDetected: nextjsApplicable,
+      networkRequests: techRequests,
+      jsSignals: techJsSignals,
+      deepHeaders: techDeepHeaders,
+      cookieNames: techCookieNames,
     });
+
+    // Auto fallback: retry tech detection with rendered HTML if initial pass is empty.
+    let finalTechResult = techResult;
+    if (!params.deepTechDetect && techResult.tags.length === 0) {
+      try {
+        const rendered = await fetchRenderedHtml(normalizedUrl);
+        if (rendered.success && rendered.html) {
+          finalTechResult = analyzeTechStack({
+            html: rendered.html,
+            url: rendered.finalUrl ?? normalizedUrl,
+            headers: fetchResult.headers,
+            nextjsDetected: nextjsApplicable,
+            networkRequests: rendered.requests,
+            jsSignals: rendered.jsSignals,
+            deepHeaders: rendered.mainResponseHeaders,
+            cookieNames: rendered.cookieNames,
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     // Use placeholder performance result
     const performanceResult: {
@@ -257,7 +327,7 @@ export async function executeQuickAudit(
         metadata: {
           seo: seoResult.metadata,
           nextjs: nextjsResult.checks,
-          tech: techResult,
+          tech: finalTechResult,
         },
         checkedAt: new Date().toISOString(),
         userId: params.userId,

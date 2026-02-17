@@ -9,8 +9,24 @@ export type RateLimitResult = {
   resetAt: number; // epoch ms
   retryAfterSeconds?: number;
   reason?: string;
-  provider: 'upstash' | 'memory';
+  provider: 'upstash' | 'memory' | 'disabled';
 };
+
+function isLiveProduction(): boolean {
+  // Prefer platform env if available.
+  if (process.env.VERCEL_ENV != null)
+    return process.env.VERCEL_ENV === 'production';
+  return process.env.NODE_ENV === 'production';
+}
+
+export function areRateLimitsEnabled(): boolean {
+  // RR_RATE_LIMIT_ENABLED overrides auto-detection when set.
+  if (process.env.RR_RATE_LIMIT_ENABLED != null) {
+    return process.env.RR_RATE_LIMIT_ENABLED === 'true';
+  }
+  // Default: only enforce in live production.
+  return isLiveProduction();
+}
 
 type MemoryWindowState = {
   timestamps: number[];
@@ -174,6 +190,16 @@ function getUpstashRatelimits(): {
 export async function checkScanRateLimit(
   request: NextRequest,
 ): Promise<RateLimitResult> {
+  if (!areRateLimitsEnabled()) {
+    return {
+      allowed: true,
+      limit: 0,
+      remaining: 0,
+      resetAt: Date.now(),
+      provider: 'disabled',
+    };
+  }
+
   const key = buildKey(request);
 
   const upstash = getUpstashRatelimits();

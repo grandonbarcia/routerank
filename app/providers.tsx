@@ -27,8 +27,10 @@ export function useTheme() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('darkMode') === 'true';
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('darkMode');
+    if (stored === null) return true;
+    return stored === 'true';
   });
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       setDarkMode: (v: boolean) => setIsDarkMode(v),
       toggleDarkMode: () => setIsDarkMode((v) => !v),
     }),
-    [isDarkMode]
+    [isDarkMode],
   );
 
   return (

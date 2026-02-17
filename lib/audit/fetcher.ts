@@ -28,30 +28,55 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
-    try {
-      const response = await fetch(normalizedUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (compatible; RouteRank/1.0; +https://routerank.dev/bot)',
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-        },
-        redirect: 'follow',
-      });
+    const MAX_REDIRECTS = 5;
 
-      // Re-validate final URL after redirects (prevents redirecting to private ranges)
-      const finalUrl = response.url || normalizedUrl;
-      if (finalUrl !== normalizedUrl) {
-        const redirectValidation = await validatePublicHttpUrl(finalUrl);
-        if (!redirectValidation.valid) {
-          return {
-            success: false,
-            error: 'Redirected to an unsafe address',
-          };
+    async function fetchWithValidatedRedirects(startUrl: string): Promise<{
+      response: Response;
+      finalUrl: string;
+    }> {
+      let currentUrl = startUrl;
+
+      for (let i = 0; i <= MAX_REDIRECTS; i += 1) {
+        const response = await fetch(currentUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (compatible; RouteRank/1.0; +https://routerank.dev/bot)',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+          },
+          // IMPORTANT: do not auto-follow redirects before validating the target.
+          redirect: 'manual',
+        });
+
+        if (
+          response.status >= 300 &&
+          response.status < 400 &&
+          response.status !== 304
+        ) {
+          const location = response.headers.get('location');
+          if (!location) return { response, finalUrl: currentUrl };
+
+          const nextUrl = new URL(location, currentUrl).toString();
+          const redirectValidation = await validatePublicHttpUrl(nextUrl);
+          if (!redirectValidation.valid || !redirectValidation.url) {
+            throw new Error('UNSAFE_REDIRECT');
+          }
+
+          currentUrl = redirectValidation.url;
+          continue;
         }
+
+        return { response, finalUrl: currentUrl };
       }
+
+      throw new Error('TOO_MANY_REDIRECTS');
+    }
+
+    try {
+      const { response, finalUrl } =
+        await fetchWithValidatedRedirects(normalizedUrl);
 
       clearTimeout(timeoutId);
 
@@ -91,16 +116,42 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
         'content-type',
         'content-length',
         'cache-control',
+        'x-robots-tag',
         'server',
         'x-powered-by',
         'x-generator',
+        // CDN / caching / edge hints
+        'x-cache',
+        'x-cache-hits',
+        'x-served-by',
+        'x-timer',
+        'x-varnish',
+        'x-fastly-request-id',
+        'fastly-debug',
+        'x-amz-cf-id',
+        'x-amz-cf-pop',
+        'x-amz-request-id',
+        'x-amz-id-2',
+        'x-akamai-transformed',
+        'x-akamai-request-id',
+        'akamai-grn',
+        // Security / policy headers
+        'strict-transport-security',
+        'content-security-policy',
+        'content-security-policy-report-only',
+        'x-frame-options',
+        'referrer-policy',
+        'permissions-policy',
+        'x-content-type-options',
+        'cross-origin-opener-policy',
+        'cross-origin-resource-policy',
+        'cross-origin-embedder-policy',
         'x-vercel-id',
         'x-nextjs-cache',
         'x-nf-request-id',
         'cf-ray',
         'cf-cache-status',
         'via',
-        'x-served-by',
         'x-drupal-cache',
         'x-shopify-stage',
         'x-wix-request-id',
@@ -121,6 +172,18 @@ export async function fetchHtml(url: string): Promise<FetcherResult> {
       clearTimeout(timeoutId);
 
       if (err instanceof Error) {
+        if (err.message === 'UNSAFE_REDIRECT') {
+          return {
+            success: false,
+            error: 'Redirected to an unsafe address',
+          };
+        }
+        if (err.message === 'TOO_MANY_REDIRECTS') {
+          return {
+            success: false,
+            error: 'Too many redirects',
+          };
+        }
         if (err.name === 'AbortError') {
           return {
             success: false,

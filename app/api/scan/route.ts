@@ -3,13 +3,15 @@ import { z } from 'zod';
 import { executeAudit, executeQuickAudit } from '@/lib/audit/execute';
 import { createHmac } from 'crypto';
 import { validatePublicHttpUrl } from '@/lib/audit/url-safety';
-import { checkScanRateLimit } from '@/lib/rate-limit';
+import { areRateLimitsEnabled, checkScanRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const DAILY_SCAN_LIMIT = 5;
 const LIMIT_COOKIE_NAME = 'rr_daily_scan';
+
+const RATE_LIMITS_ENABLED = areRateLimitsEnabled();
 
 const MAX_CONCURRENT_AUDITS = Math.max(
   1,
@@ -160,10 +162,10 @@ const createScanSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Server-side abuse protection (IP-based). This cannot be bypassed by clearing cookies.
-    const rl = await checkScanRateLimit(request);
-    if (!rl.allowed) {
-      const res = NextResponse.json(
+    // Server-side abuse protection (IP-based). Disabled by default in dev/preview.
+    const rl = RATE_LIMITS_ENABLED ? await checkScanRateLimit(request) : null;
+    if (RATE_LIMITS_ENABLED && rl && !rl.allowed) {
+      return NextResponse.json(
         {
           error: rl.reason || 'Too many requests',
           limit: rl.limit,
@@ -184,7 +186,6 @@ export async function POST(request: NextRequest) {
           },
         },
       );
-      return res;
     }
 
     const body = await request.json();
@@ -210,18 +211,21 @@ export async function POST(request: NextRequest) {
 
     const normalizedUrl = safeUrl.url;
 
-    // Daily scan limit (per browser via cookie; optionally signed with RATE_LIMIT_SECRET).
+    // Daily scan limit (per browser via cookie). Disabled by default in dev/preview.
     const now = new Date();
     const todayKey = getUtcDayKey(now);
     const resetIso = getUtcResetIso(now);
     const secret = process.env.RATE_LIMIT_SECRET;
-    const current = parseDailyLimitCookie({
-      cookieValue: request.cookies.get(LIMIT_COOKIE_NAME)?.value,
-      todayKey,
-      secret,
-    });
 
-    if (current.c >= DAILY_SCAN_LIMIT) {
+    const current = RATE_LIMITS_ENABLED
+      ? parseDailyLimitCookie({
+          cookieValue: request.cookies.get(LIMIT_COOKIE_NAME)?.value,
+          todayKey,
+          secret,
+        })
+      : ({ d: todayKey, c: 0 } satisfies DailyLimitPayload);
+
+    if (RATE_LIMITS_ENABLED && current.c >= DAILY_SCAN_LIMIT) {
       const blockedPayload: DailyLimitPayload = { d: todayKey, c: current.c };
       const res = NextResponse.json(
         {
@@ -240,8 +244,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const nextCount = current.c + 1;
-    const remaining = DAILY_SCAN_LIMIT - nextCount;
+    const nextCount = RATE_LIMITS_ENABLED ? current.c + 1 : 0;
+    const remaining = RATE_LIMITS_ENABLED ? DAILY_SCAN_LIMIT - nextCount : 0;
     const nextPayload: DailyLimitPayload = { d: todayKey, c: nextCount };
     const nextCookieValue = buildDailyLimitCookieValue(nextPayload, secret);
 
@@ -261,6 +265,7 @@ export async function POST(request: NextRequest) {
         { error: auditResult.error || 'Failed to run audit' },
         { status: 400, headers: { 'Cache-Control': 'no-store' } },
       );
+      if (!RATE_LIMITS_ENABLED) return res;
       return applyRateLimitToResponse({
         response: res,
         remaining,
@@ -275,22 +280,28 @@ export async function POST(request: NextRequest) {
         url: auditResult.url || normalizedUrl,
         report: auditResult.report,
         guest: true,
-        rateLimit: {
-          provider: rl.provider,
-          daily: {
-            limit: rl.limit,
-            remaining: rl.remaining,
-            resetAt: new Date(rl.resetAt).toISOString(),
-          },
-        },
-        limit: {
-          daily: DAILY_SCAN_LIMIT,
-          remaining,
-          resetAt: resetIso,
-        },
+        ...(RATE_LIMITS_ENABLED && rl
+          ? {
+              rateLimit: {
+                provider: rl.provider,
+                daily: {
+                  limit: rl.limit,
+                  remaining: rl.remaining,
+                  resetAt: new Date(rl.resetAt).toISOString(),
+                },
+              },
+              limit: {
+                daily: DAILY_SCAN_LIMIT,
+                remaining,
+                resetAt: resetIso,
+              },
+            }
+          : { rateLimit: { provider: 'disabled', daily: null }, limit: null }),
       },
       { status: 200, headers: { 'Cache-Control': 'no-store' } },
     );
+
+    if (!RATE_LIMITS_ENABLED) return res;
     return applyRateLimitToResponse({
       response: res,
       remaining,

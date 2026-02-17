@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Download, Copy, Check } from 'lucide-react';
+import { Share2, Download, Copy, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/base/button';
+import { Input } from '@/components/base/input';
 
 interface ShareExportProps {
   scanId: string;
@@ -15,7 +17,7 @@ export function ShareExport({ scanId, url }: ShareExportProps) {
   const [exporting, setExporting] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { success: showSuccess, error: showError } = useToast();
+  const { success, error } = useToast();
 
   const handleShare = async () => {
     setSharing(true);
@@ -32,10 +34,10 @@ export function ShareExport({ scanId, url }: ShareExportProps) {
 
       const data = await response.json();
       setShareUrl(data.shareUrl);
-      showSuccess('Share link generated!');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Share failed';
-      showError(message);
+      success('Share link generated!');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Share failed';
+      error(message);
     } finally {
       setSharing(false);
     }
@@ -45,7 +47,7 @@ export function ShareExport({ scanId, url }: ShareExportProps) {
     if (shareUrl) {
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      showSuccess('Link copied to clipboard!');
+      success('Link copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -73,10 +75,10 @@ export function ShareExport({ scanId, url }: ShareExportProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      showSuccess('Report exported successfully!');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Export failed';
-      showError(message);
+      success('Report exported successfully!');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Export failed';
+      error(message);
     } finally {
       setExporting(false);
     }
@@ -85,52 +87,43 @@ export function ShareExport({ scanId, url }: ShareExportProps) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
-        <button
-          onClick={handleShare}
-          disabled={sharing}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition"
-        >
-          <Share2 className="h-4 w-4" />
-          {sharing ? 'Generating...' : 'Share'}
-        </button>
+        {/* Share Button (Dialog or just logic? Logic seems to generate URL) */}
+        {/* If shareUrl is present, maybe show it? Original logic didn't show where shareUrl goes unless I implement a dialog or update state to show input */}
+        {/* Original rendered a button. If clicked, it sets shareUrl. But where is it displayed? */}
+        {/* I'll wrap Share in a Dialog if needed, or just let it be a button that copies? */}
+        {/* Re-reading original code... it setShareUrl inside handleShare. But didn't update UI to show it? */}
+        {/* Ah, I missed the bottom of the file where it probably renders the link if shareUrl is true. */}
 
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 text-gray-700 dark:text-gray-200 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition"
-        >
-          <Download className="h-4 w-4" />
-          {exporting ? 'Exporting...' : 'Export'}
-        </button>
+        <Button variant="outline" onClick={handleShare} disabled={sharing}>
+          <Share2 className="mr-2 h-4 w-4" />
+          {sharing ? 'Generating...' : 'Share'}
+        </Button>
+
+        <Button variant="outline" onClick={handleExport} disabled={exporting}>
+          {exporting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          Export JSON
+        </Button>
       </div>
 
       {shareUrl && (
-        <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4 space-y-3">
-          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            Share Link
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={shareUrl}
-              readOnly
-              className="flex-1 px-3 py-2 rounded bg-white dark:bg-gray-900 border border-blue-300 dark:border-blue-700 text-sm text-gray-900 dark:text-gray-100"
-            />
-            <button
-              onClick={handleCopyLink}
-              className="inline-flex items-center gap-2 rounded px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" /> Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" /> Copy
-                </>
-              )}
-            </button>
-          </div>
+        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Input readOnly value={shareUrl} className="font-mono text-xs h-9" />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleCopyLink}
+            className="h-9 w-9 shrink-0"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       )}
     </div>

@@ -1,5 +1,16 @@
 import * as cheerio from 'cheerio';
 
+type ResponseHeaders = Record<string, string> | undefined;
+
+type SecurityPresent = {
+  hsts: boolean;
+  csp: boolean;
+  xFrameOptionsOrFrameAncestors: boolean;
+  referrerPolicy: boolean;
+  permissionsPolicy: boolean;
+  xContentTypeOptions: boolean;
+};
+
 interface SeoIssue {
   category: 'seo';
   severity: 'critical' | 'high' | 'medium' | 'low';
@@ -18,14 +29,141 @@ interface SeoResult {
     canonical: string | null;
     viewport: string | null;
     lang: string | null;
+    indexability?: {
+      robotsMeta?: string | null;
+      googlebotMeta?: string | null;
+      xRobotsTag?: string | null;
+      resolvedCanonical?: string | null;
+      canonicalSameOrigin?: boolean | null;
+      isNoindex?: boolean;
+      isNofollow?: boolean;
+    };
+    security?: {
+      score: number;
+      present: {
+        hsts: boolean;
+        csp: boolean;
+        xFrameOptionsOrFrameAncestors: boolean;
+        referrerPolicy: boolean;
+        permissionsPolicy: boolean;
+        xContentTypeOptions: boolean;
+      };
+    };
+    accessibility?: {
+      imagesMissingAlt: number;
+      formControlsMissingLabel: number;
+      buttonsMissingName: number;
+    };
+  };
+}
+
+function getHeader(headers: ResponseHeaders, name: string): string | null {
+  if (!headers) return null;
+  const key = name.toLowerCase();
+  return headers[key] ?? null;
+}
+
+function parseRobotsDirectives(value: string | null | undefined): {
+  noindex: boolean;
+  nofollow: boolean;
+} {
+  const raw = (value ?? '').toLowerCase();
+  const noindex = /\bnoindex\b/.test(raw);
+  const nofollow = /\bnofollow\b/.test(raw);
+  return { noindex, nofollow };
+}
+
+function isSameOrigin(a: string, b: string): boolean {
+  try {
+    const ua = new URL(a);
+    const ub = new URL(b);
+    return ua.origin === ub.origin;
+  } catch {
+    return false;
+  }
+}
+
+function hasFrameAncestorsDirective(csp: string | null): boolean {
+  if (!csp) return false;
+  return /(^|;)\s*frame-ancestors\s+[^;]+/i.test(csp);
+}
+
+function computeSecurityHeadersScore(headers: ResponseHeaders): {
+  score: number;
+  present: SecurityPresent;
+  missing: string[];
+} {
+  const hsts = Boolean(getHeader(headers, 'strict-transport-security'));
+  const cspHeader = getHeader(headers, 'content-security-policy');
+  const cspReportOnly = getHeader(
+    headers,
+    'content-security-policy-report-only',
+  );
+  const csp = Boolean(cspHeader) || Boolean(cspReportOnly);
+
+  const xfo = Boolean(getHeader(headers, 'x-frame-options'));
+  const frameAncestors = hasFrameAncestorsDirective(cspHeader);
+  const xFrameOptionsOrFrameAncestors = xfo || frameAncestors;
+
+  const referrerPolicy = Boolean(getHeader(headers, 'referrer-policy'));
+  const permissionsPolicy = Boolean(getHeader(headers, 'permissions-policy'));
+  const xContentTypeOptions =
+    (getHeader(headers, 'x-content-type-options') ?? '').toLowerCase() ===
+    'nosniff';
+
+  // Simple weighted score. Keep it stable and interpretable.
+  const weights = {
+    hsts: 25,
+    csp: 25,
+    xFrame: 20,
+    referrer: 10,
+    permissions: 10,
+    nosniff: 10,
+  };
+
+  let score = 0;
+  const missing: string[] = [];
+
+  if (hsts) score += weights.hsts;
+  else missing.push('strict-transport-security');
+
+  if (csp) score += weights.csp;
+  else missing.push('content-security-policy');
+
+  if (xFrameOptionsOrFrameAncestors) score += weights.xFrame;
+  else missing.push('x-frame-options / frame-ancestors');
+
+  if (referrerPolicy) score += weights.referrer;
+  else missing.push('referrer-policy');
+
+  if (permissionsPolicy) score += weights.permissions;
+  else missing.push('permissions-policy');
+
+  if (xContentTypeOptions) score += weights.nosniff;
+  else missing.push('x-content-type-options: nosniff');
+
+  return {
+    score,
+    present: {
+      hsts,
+      csp,
+      xFrameOptionsOrFrameAncestors,
+      referrerPolicy,
+      permissionsPolicy,
+      xContentTypeOptions,
+    },
+    missing,
   };
 }
 
 /**
  * Analyzes HTML for SEO issues
  */
-export function analyzeSeo(html: string, baseUrl: string): SeoResult {
-  void baseUrl;
+export function analyzeSeo(
+  html: string,
+  baseUrl: string,
+  headers?: Record<string, string>,
+): SeoResult {
   const $ = cheerio.load(html);
   const issues: SeoIssue[] = [];
   let score = 100;
@@ -103,6 +241,37 @@ export function analyzeSeo(html: string, baseUrl: string): SeoResult {
       suggestion: 'Add a canonical link to prevent duplicate content issues',
     });
     score -= 8;
+  }
+
+  // Indexability / crawlability: canonical validity + origin
+  let resolvedCanonical: string | null = null;
+  let canonicalSameOrigin: boolean | null = null;
+  if (canonical) {
+    try {
+      resolvedCanonical = new URL(canonical, baseUrl).toString();
+      canonicalSameOrigin = isSameOrigin(resolvedCanonical, baseUrl);
+      if (!canonicalSameOrigin) {
+        issues.push({
+          category: 'seo',
+          severity: 'medium',
+          rule: 'canonical-cross-origin',
+          message: 'Canonical points to a different origin',
+          suggestion:
+            'Ensure the canonical URL points to the preferred URL on the same site',
+        });
+        score -= 3;
+      }
+    } catch {
+      issues.push({
+        category: 'seo',
+        severity: 'medium',
+        rule: 'canonical-invalid',
+        message: 'Canonical URL is not a valid URL',
+        suggestion:
+          'Set rel="canonical" to a valid absolute or site-relative URL',
+      });
+      score -= 3;
+    }
   }
 
   // Check viewport meta tag
@@ -215,6 +384,7 @@ export function analyzeSeo(html: string, baseUrl: string): SeoResult {
 
   // Check for robots meta tag
   const robots = $('meta[name="robots"]').attr('content');
+  const googlebot = $('meta[name="googlebot"]').attr('content');
   if (!robots || !robots.includes('index')) {
     // Warning only if explicitly set to noindex
     if (robots && robots.includes('noindex')) {
@@ -227,6 +397,152 @@ export function analyzeSeo(html: string, baseUrl: string): SeoResult {
       });
       score -= 10;
     }
+  }
+
+  // Indexability / crawlability: header-based robots directives
+  const xRobotsTag = getHeader(headers, 'x-robots-tag');
+  const robotsDirectives = parseRobotsDirectives(robots);
+  const googlebotDirectives = parseRobotsDirectives(googlebot);
+  const xRobotsDirectives = parseRobotsDirectives(xRobotsTag);
+
+  const isNoindex =
+    robotsDirectives.noindex ||
+    googlebotDirectives.noindex ||
+    xRobotsDirectives.noindex;
+  const isNofollow =
+    robotsDirectives.nofollow ||
+    googlebotDirectives.nofollow ||
+    xRobotsDirectives.nofollow;
+
+  if (xRobotsDirectives.noindex) {
+    issues.push({
+      category: 'seo',
+      severity: 'critical',
+      rule: 'x-robots-tag-noindex',
+      message: 'Response header X-Robots-Tag includes noindex',
+      suggestion:
+        'Remove X-Robots-Tag: noindex if you want this page to be searchable',
+    });
+    score -= 10;
+  }
+
+  if (googlebotDirectives.noindex) {
+    issues.push({
+      category: 'seo',
+      severity: 'critical',
+      rule: 'googlebot-noindex',
+      message: 'Meta tag googlebot includes noindex',
+      suggestion: 'Remove googlebot noindex if this page should be indexed',
+    });
+    score -= 10;
+  }
+
+  if (isNofollow) {
+    issues.push({
+      category: 'seo',
+      severity: 'medium',
+      rule: 'nofollow-detected',
+      message: 'nofollow directive detected for this page',
+      suggestion:
+        'Remove nofollow if you want search engines to follow links on this page',
+    });
+    score -= 3;
+  }
+
+  // Security headers score (reported in SEO issues for now)
+  const security = computeSecurityHeadersScore(headers);
+  if (security.score < 60) {
+    issues.push({
+      category: 'seo',
+      severity: 'medium',
+      rule: 'missing-security-headers',
+      message: `Security headers score is ${security.score}/100`,
+      suggestion: `Add missing headers: ${security.missing.join(', ')}`,
+    });
+    score -= 3;
+  } else if (security.score < 90) {
+    issues.push({
+      category: 'seo',
+      severity: 'low',
+      rule: 'security-headers-improve',
+      message: `Security headers score is ${security.score}/100`,
+      suggestion: `Consider adding: ${security.missing.join(', ')}`,
+    });
+    score -= 1;
+  }
+
+  // Basic accessibility snapshot (HTML-only)
+  // - Form controls should have a label (label[for], aria-label, aria-labelledby, or be wrapped by <label>)
+  // - Buttons should have an accessible name (text or aria-label/aria-labelledby/title)
+  const formControls = $('input, select, textarea');
+  let formControlsMissingLabel = 0;
+  formControls.each((_, el) => {
+    const tag = el.tagName?.toLowerCase();
+    if (tag === 'input') {
+      const type = ($(el).attr('type') ?? '').toLowerCase();
+      if (['hidden', 'submit', 'button', 'image', 'reset'].includes(type)) {
+        return;
+      }
+    }
+
+    const id = $(el).attr('id');
+    const ariaLabel = $(el).attr('aria-label');
+    const ariaLabelledBy = $(el).attr('aria-labelledby');
+    const titleAttr = $(el).attr('title');
+
+    const hasLabelFor = Boolean(
+      id &&
+      $('label').filter((_, labelEl) => $(labelEl).attr('for') === id).length >
+        0,
+    );
+    const wrappedByLabel = $(el).parents('label').length > 0;
+
+    const hasAccessibleName =
+      Boolean(ariaLabel?.trim()) ||
+      Boolean(ariaLabelledBy?.trim()) ||
+      Boolean(titleAttr?.trim());
+
+    if (!hasLabelFor && !wrappedByLabel && !hasAccessibleName) {
+      formControlsMissingLabel += 1;
+    }
+  });
+
+  if (formControlsMissingLabel > 0) {
+    issues.push({
+      category: 'seo',
+      severity: formControlsMissingLabel >= 5 ? 'high' : 'medium',
+      rule: 'a11y-form-labels-missing',
+      message: `${formControlsMissingLabel} form controls missing an accessible label`,
+      suggestion:
+        'Add <label for>, wrap inputs with <label>, or provide aria-label/aria-labelledby',
+      count: formControlsMissingLabel,
+    });
+    score -= Math.min(6, formControlsMissingLabel);
+  }
+
+  const buttons = $('button, [role="button"]');
+  let buttonsMissingName = 0;
+  buttons.each((_, el) => {
+    const text = $(el).text().replace(/\s+/g, ' ').trim();
+    const ariaLabel = $(el).attr('aria-label')?.trim();
+    const ariaLabelledBy = $(el).attr('aria-labelledby')?.trim();
+    const titleAttr = $(el).attr('title')?.trim();
+    if (!text && !ariaLabel && !ariaLabelledBy && !titleAttr) {
+      buttonsMissingName += 1;
+    }
+  });
+
+  if (buttonsMissingName > 0) {
+    issues.push({
+      category: 'seo',
+      severity: buttonsMissingName >= 3 ? 'medium' : 'low',
+      rule: 'a11y-button-name-missing',
+      message: `${buttonsMissingName} buttons missing an accessible name`,
+      suggestion:
+        'Ensure buttons have visible text or aria-label/aria-labelledby',
+      count: buttonsMissingName,
+    });
+    score -= Math.min(3, buttonsMissingName);
   }
 
   // Check for structured data (JSON-LD)
@@ -267,6 +583,24 @@ export function analyzeSeo(html: string, baseUrl: string): SeoResult {
       canonical: canonical || null,
       viewport: viewport || null,
       lang: lang || null,
+      indexability: {
+        robotsMeta: robots ?? null,
+        googlebotMeta: googlebot ?? null,
+        xRobotsTag,
+        resolvedCanonical,
+        canonicalSameOrigin,
+        isNoindex,
+        isNofollow,
+      },
+      security: {
+        score: security.score,
+        present: security.present,
+      },
+      accessibility: {
+        imagesMissingAlt: imagesWithoutAlt.length,
+        formControlsMissingLabel,
+        buttonsMissingName,
+      },
     },
   };
 }
